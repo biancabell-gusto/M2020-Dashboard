@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money 2020 Conference Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .title { color: #F45D48; font-size: 24px; margin: 0; display: flex; align-items: center; }
+        .logo { width: 30px; height: 30px; background: #F45D48; color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold; }
+        .content { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        .sidebar { background: white; padding: 20px; border-radius: 8px; }
+        .main { background: white; padding: 20px; border-radius: 8px; }
+        .filter-tag { background: #f8f9fa; border: 1px solid #ddd; padding: 8px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; margin: 2px; display: inline-block; }
+        .filter-tag:hover { background: #e9ecef; }
+        .filter-tag.active { background: #F45D48; color: white; }
+        .session { background: white; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-bottom: 10px; }
+        .session-time { font-size: 16px; font-weight: bold; color: #F45D48; }
+        .session-title { font-size: 14px; font-weight: bold; color: #333; margin: 5px 0; }
+        .session-details { font-size: 12px; color: #666; }
+        .day-header { background: #f8f9fa; padding: 10px; margin: 20px 0 10px 0; border-radius: 6px; font-weight: bold; }
+        .stats { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #F45D48; }
+        .stat-label { font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">
+            <span class="logo">G</span>
+            Money 2020 Conference Dashboard
+        </h1>
+        <p>October 26-29, 2024 • Las Vegas, NV</p>
+    </div>
+    
+    <div class="content">
+        <div class="sidebar">
+            <div class="stats">
+                <div class="stat-number" id="total-sessions">156</div>
+                <div class="stat-label">Total Sessions</div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-number" id="filtered-count">156</div>
+                <div class="stat-label">Filtered Sessions</div>
+            </div>
+            
+            <h3>Filter by Day</h3>
+            <div id="day-filters">
+                <div class="filter-tag active" onclick="filterDay('All')">All</div>
+                <div class="filter-tag" onclick="filterDay('Sunday Oct 26')">Sunday</div>
+                <div class="filter-tag" onclick="filterDay('Monday Oct 27')">Monday</div>
+                <div class="filter-tag" onclick="filterDay('Tuesday Oct 28')">Tuesday</div>
+                <div class="filter-tag" onclick="filterDay('Wednesday Oct 29')">Wednesday</div>
+            </div>
+            
+            <h3>Filter by Topic</h3>
+            <div id="track-filters">
+                <div class="filter-tag active" onclick="filterTrack('All')">All</div>
+                <div class="filter-tag" onclick="filterTrack('Securing Trust')">Securing Trust</div>
+                <div class="filter-tag" onclick="filterTrack('Age of Infrastructure')">Age of Infrastructure</div>
+                <div class="filter-tag" onclick="filterTrack('Global Payments Race')">Global Payments Race</div>
+                <div class="filter-tag" onclick="filterTrack('FinTech Spring')">FinTech Spring</div>
+                <div class="filter-tag" onclick="filterTrack('Networking')">Networking</div>
+                <div class="filter-tag" onclick="filterTrack('Partner Meeting')">Partner Meeting</div>
+            </div>
+            
+            <h3>Filter by Participant</h3>
+            <div id="participant-filters">
+                <div class="filter-tag active" onclick="filterParticipant('All')">All</div>
+                <div class="filter-tag" onclick="filterParticipant('Me')">My Sessions</div>
+            </div>
+            
+            <div style="margin-top: 20px; margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Your Name:</label>
+                <input type="text" id="participant-name" placeholder="Enter your name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #28a745;">
+                    <strong style="color: #28a745;">🔄 Real-time Sync Active</strong><br>
+                    <small style="color: #666;">Changes sync automatically with your team</small>
+                </div>
+                <button onclick="syncWithTeam()" style="width: 100%; background: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; font-size: 14px; cursor: pointer; margin-bottom: 10px; font-weight: bold;">🔄 Sync Now</button>
+                <button onclick="exportParticipants()" style="width: 100%; background: #6f42c1; color: white; border: none; padding: 8px; border-radius: 4px; font-size: 12px; cursor: pointer; margin-bottom: 5px;">Export Participants</button>
+                <button onclick="importParticipants()" style="width: 100%; background: #fd7e14; color: white; border: none; padding: 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">Import Participants</button>
+            </div>
+            
+            <button style="width: 100%; background: #0A8080; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 20px;" onclick="showPartnerMeetingForm()">
+                + Add Partner Meeting
+            </button>
+        </div>
+
+        <div class="main" id="sessions-container">
+            <!-- Sessions will load here -->
+        </div>
+    </div>
+
+    <!-- Partner Meeting Details Modal -->
+    <div id="partner-meeting-details-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <h2 style="margin-top: 0; color: #F45D48; margin-bottom: 20px;">Partner Meeting Details</h2>
+            <div id="meeting-details-content">
+                <!-- Details will be populated here -->
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="hidePartnerMeetingDetails()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partner Meeting Form Modal -->
+    <div id="partner-meeting-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <h2 style="margin-top: 0; color: #F45D48; margin-bottom: 20px;">Add Partner Meeting</h2>
+            <form id="partner-meeting-form">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Meeting Title:</label>
+                    <input type="text" id="meeting-title" placeholder="e.g., Partner Strategy Meeting" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Date:</label>
+                    <select id="meeting-date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                        <option value="">Select Date</option>
+                        <option value="Sunday Oct 26">Sunday Oct 26</option>
+                        <option value="Monday Oct 27">Monday Oct 27</option>
+                        <option value="Tuesday Oct 28">Tuesday Oct 28</option>
+                        <option value="Wednesday Oct 29">Wednesday Oct 29</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Time:</label>
+                    <input type="time" id="meeting-time" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Location:</label>
+                    <input type="text" id="meeting-location" placeholder="e.g., Money Hall, Level 2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Attendees:</label>
+                    <input type="text" id="meeting-attendees" placeholder="e.g., John Smith, Jane Doe" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Duration:</label>
+                    <input type="text" id="meeting-duration" placeholder="e.g., 30 min, 1 h" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" style="flex: 1; background: #F45D48; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;">Add Meeting</button>
+                    <button type="button" onclick="hidePartnerMeetingForm()" style="flex: 1; background: #6c757d; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Complete Money 2020 Conference Agenda - All 156 Sessions
+        const sessions = [
+            // Sunday October 26 (29 sessions) - Complete
+            { id: 1, day: "Sunday Oct 26", time: "09:35", title: "The Hateful Eight: Obstacles to Fraud and Their Solutions", type: "Panel Discussion", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 2, day: "Sunday Oct 26", time: "09:45", title: "Creating a Future Where Banking, Payments, and Wealth Collide", type: "Conversation", duration: "25 min", location: "Wealth Management Summit: Marco Polo, 705-707, Level 1", track: "Age of Infrastructure" },
+            { id: 3, day: "Sunday Oct 26", time: "10:10", title: "Stablecoin Fraud: The Hidden Risk in the Payments Ecosystem", type: "Panel Discussion", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Global Payments Race" },
+            { id: 4, day: "Sunday Oct 26", time: "10:15", title: "Your Legacy, Now Included: Estate Planning as Essential Financial Shield", type: "Conversation", duration: "20 min", location: "Wealth Management Summit: Marco Polo, 705-707, Level 1", track: "Securing Trust" },
+            { id: 5, day: "Sunday Oct 26", time: "10:20", title: "Data: Accelerating Customer Delight", type: "Panel Discussion", duration: "30 min", location: "Data Summit: Galileo, 1001-1003, Level 1", track: "Global Payments Race" },
+            { id: 6, day: "Sunday Oct 26", time: "10:40", title: "Women Investors - The Greatest Opportunity For Wealth Management Growth", type: "Conversation", duration: "25 min", location: "Wealth Management Summit: Marco Polo, 705-707, Level 1", track: "Securing Trust" },
+            { id: 7, day: "Sunday Oct 26", time: "10:45", title: "Turning Fraud Resolution into Brand Loyalty", type: "Conversation", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 8, day: "Sunday Oct 26", time: "10:55", title: "Credit Where It's Due, Greater Access with Consumer-Permissioned Data", type: "Panel Discussion", duration: "30 min", location: "Data Summit: Galileo, 1001-1003, Level 1", track: "Age of Infrastructure" },
+            { id: 9, day: "Sunday Oct 26", time: "11:10", title: "Defending the Dollar", type: "Interview", duration: "20 min", location: "Wealth Management Summit: Marco Polo, 705-707, Level 1", track: "Age of Infrastructure" },
+            { id: 10, day: "Sunday Oct 26", time: "11:20", title: "The Anti-FinCrime Neural Network, AI Connects the Dots", type: "Panel Discussion", duration: "35 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 11, day: "Sunday Oct 26", time: "12:00", title: "Beyond Post-Quantum Readiness", type: "Panel Discussion", duration: "30 min", location: "Data Summit: Galileo, 1001-1003, Level 1", track: "Age of Infrastructure" },
+            { id: 12, day: "Sunday Oct 26", time: "12:50", title: "Mobile Hijack: The New Face of Financial Fraud", type: "Fireside Chat", duration: "20 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 13, day: "Sunday Oct 26", time: "13:15", title: "Opening Remarks: The Future Vision of Finance Powered by Uphold", type: "Uphold", duration: "5 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 14, day: "Sunday Oct 26", time: "13:15", title: "Winning the Battle Against Fraud & Chargebacks", type: "Panel Discussion", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 15, day: "Sunday Oct 26", time: "13:15", title: "A Credentialess Future: The Next Frontier of Alternative Data", type: "Panel Discussion", duration: "25 min", location: "Data Summit: Galileo, 1001-1003, Level 1", track: "Securing Trust" },
+            { id: 16, day: "Sunday Oct 26", time: "13:20", title: "What's Driving Blockchain Adoption in the Next Generation Powered by Uphold", type: "Uphold", duration: "30 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 17, day: "Sunday Oct 26", time: "13:25", title: "In the Tranches: Wealth's Battle for the Next-Gen Investor", type: "Conversation", duration: "25 min", location: "Wealth Management Summit: Marco Polo, 705-707, Level 1", track: "FinTech Spring" },
+            { id: 18, day: "Sunday Oct 26", time: "13:50", title: "Case Study: Bitcoin Adoption Goes Mainstream: Embedded in Big Brands Powered by Uphold", type: "Uphold", duration: "5 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 19, day: "Sunday Oct 26", time: "13:50", title: "Scamdemic Solutions: AI, Not Anecdotes", type: "Panel Discussion", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 20, day: "Sunday Oct 26", time: "13:55", title: "Digital Wealth Redefined: Family Office Playbook", type: "Panel Discussion", duration: "30 min", location: "Wealth Management Summit: Marco Polo, 705-707, Level 1", track: "Securing Trust" },
+            { id: 21, day: "Sunday Oct 26", time: "14:00", title: "Bitcoin Adoption Goes Mainstream: Embedded in Big Brands Powered by Uphold", type: "Uphold", duration: "30 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 22, day: "Sunday Oct 26", time: "14:25", title: "Can AI Beat AI?", type: "Panel Discussion", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 23, day: "Sunday Oct 26", time: "14:30", title: "Legit or Not: Cutting Through Blockchain's Biggest Debates Powered by Uphold", type: "Uphold", duration: "30 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 24, day: "Sunday Oct 26", time: "14:40", title: "Enhancing Experiences: Smart Data in the Age of Open Finance", type: "Panel Discussion", duration: "25 min", location: "Data Summit: Galileo, 1001-1003, Level 1", track: "Age of Infrastructure" },
+            { id: 25, day: "Sunday Oct 26", time: "15:00", title: "Deepfakes, Real Risk: Fighting Fraud in an Age of Synthetic Identity", type: "Panel Discussion", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Securing Trust" },
+            { id: 26, day: "Sunday Oct 26", time: "15:05", title: "Growth in LATAM: Adoption of Blockchain and What's Next Powered by Uphold", type: "Uphold", duration: "30 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 27, day: "Sunday Oct 26", time: "15:35", title: "Blockchain is Borderless: What You Need to Know About Global Regulations Powered by Uphold", type: "Uphold", duration: "30 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            { id: 28, day: "Sunday Oct 26", time: "15:35", title: "A View from Congress: The Future of Financial Innovation", type: "Conversation", duration: "30 min", location: "Fraud Summit: Marco Polo, 801-803, Level 1", track: "Age of Infrastructure" },
+            { id: 29, day: "Sunday Oct 26", time: "16:05", title: "UPHOLD CLOSING ADDRESS", type: "Uphold", duration: "10 min", location: "Moving On-Chain Summit, Powered by Uphold: Casanova, 501-504, Level 1", track: "Global Payments Race" },
+            
+            // Monday October 27 - First 20 sessions
+            { id: 30, day: "Monday Oct 27", time: "09:25", title: "The Next Chapter in Banking Growth and Innovation", type: "Fireside Chat", duration: "20 min", location: "Exchange Stage", track: "FinTech Spring" },
+            { id: 31, day: "Monday Oct 27", time: "09:30", title: "Fintech Confidential Podcast -LIVE! 1", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 32, day: "Monday Oct 27", time: "09:45", title: "Speaking Stablecoins to Banks", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 33, day: "Monday Oct 27", time: "09:45", title: "AI in Finance: Scaling Financial Intelligence - Powered by NVIDIA & Oracle Cloud", type: "NVIDIA & Oracle", duration: "1 h", location: "MoneyPot Stage, Money Hall", track: "Global Payments Race" },
+            { id: 34, day: "Monday Oct 27", time: "09:45", title: "KYCustomer, Evolved", type: "Panel Discussion", duration: "25 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 35, day: "Monday Oct 27", time: "10:15", title: "Beyond Bots: Crafting Meaningful Customer Experiences with AI", type: "Conversation", duration: "20 min", location: "Exchange Stage", track: "Age of Infrastructure" },
+            { id: 36, day: "Monday Oct 27", time: "10:15", title: "Who's in control? Agentic AI & future of financial power", type: "Panel Discussion", duration: "25 min", location: "Emergent Stage, Money Hall", track: "Securing Trust" },
+            { id: 37, day: "Monday Oct 27", time: "10:15", title: "Strategies for Modern Card Issuing", type: "Panel Discussion", duration: "20 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 38, day: "Monday Oct 27", time: "10:20", title: "Can the U.S. Embrace Centralized Payments & Identity?", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 39, day: "Monday Oct 27", time: "10:40", title: "Innovative Banking Starts with Infrastructure", type: "Fireside Chat", duration: "20 min", location: "Exchange Stage", track: "Age of Infrastructure" },
+            { id: 40, day: "Monday Oct 27", time: "10:40", title: "Winning global ISV markets: future of processors and software providers", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "Global Payments Race" },
+            { id: 41, day: "Monday Oct 27", time: "10:45", title: "Banking's Next Leap: The AI Agent Era", type: "Conversation", duration: "20 min", location: "Emergent Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 42, day: "Monday Oct 27", time: "10:45", title: "Let's Money podcast- LIVE! Invisible Revolution: Brazilian Companies boosting Open Finance", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 43, day: "Monday Oct 27", time: "10:55", title: "Banks vs. Crypto vs. Asset Managers (Spoiler: They All Win)", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 44, day: "Monday Oct 27", time: "11:10", title: "An AI CFO in Everyone's Pocket", type: "Conversation", duration: "20 min", location: "Emergent Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 45, day: "Monday Oct 27", time: "11:10", title: "Reaching 400+ million members and counting!", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Securing Trust" },
+            { id: 46, day: "Monday Oct 27", time: "11:15", title: "Embedded Finance: Risks, Rewards and the Road Ahead, Powered by Green Dot", type: "Green Dot", duration: "1 h", location: "MoneyPot Stage, Money Hall", track: "Global Payments Race" },
+            { id: 47, day: "Monday Oct 27", time: "11:20", title: "Blood in the Digital Water: Real-Time Data Intelligence vs. Modern Fraud Sharks", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "Securing Trust" },
+            { id: 48, day: "Monday Oct 27", time: "11:30", title: "Crypto's Payment Takeover: The Disruption You Can't Ignore", type: "Presentation", duration: "15 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 49, day: "Monday Oct 27", time: "11:30", title: "The Payments Shed Podcast- LIVE! 1", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Global Payments Race" },
+            { id: 50, day: "Monday Oct 27", time: "11:30", title: "Bankadelic Podcast-LIVE! 1", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "FinTech Spring" },
+            { id: 51, day: "Monday Oct 27", time: "11:35", title: "Audit-Ready Algorithms: Structuring AI for Easy Regulatory Reviews", type: "Panel Discussion", duration: "25 min", location: "Emergent Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 52, day: "Monday Oct 27", time: "11:40", title: "From Concept to Reality: Reshaping Global Money Movement Through The Blockchain", type: "Conversation", duration: "20 min", location: "Exchange Stage", track: "Global Payments Race" },
+            { id: 53, day: "Monday Oct 27", time: "11:45", title: "Rewiring Financial Services DNA", type: "Fireside Chat", duration: "15 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring, Global Payments Race" },
+            { id: 54, day: "Monday Oct 27", time: "11:50", title: "Crypto Payment Barriers Burning Down", type: "Panel Discussion", duration: "40 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 55, day: "Monday Oct 27", time: "12:00", title: "Beyond Crypto: Why Banks and Exchanges Reject Blockchain's Promise", type: "Agingo", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 56, day: "Monday Oct 27", time: "12:00", title: "What the FinTech? Podcast-LIVE!", type: "Podcast", duration: "30 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 57, day: "Monday Oct 27", time: "12:00", title: "Mr. Open Banking Podcast-LIVE! 1", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "FinTech Spring" },
+            { id: 58, day: "Monday Oct 27", time: "12:40", title: "Engaged or annoyed? Contact and friction in the customer experience", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "FinTech Spring" },
+            { id: 59, day: "Monday Oct 27", time: "13:15", title: "Fraudwatch: Money20/20 Special Edition", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Securing Trust" },
+            { id: 60, day: "Monday Oct 27", time: "13:30", title: "Data Democratization Podcast-LIVE! 1", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Securing Trust" },
+            { id: 61, day: "Monday Oct 27", time: "13:35", title: "Heavyweights in the Ring: Taking Embedded Finance to the Enterprise", type: "Conversation", duration: "20 min", location: "Emergent Stage, Money Hall", track: "Global Payments Race" },
+            { id: 62, day: "Monday Oct 27", time: "13:40", title: "The AI Advantage: How Fintechs Can Measure, Learn, and Win With Smarter Analytics, Powered by Mixpanel", type: "Mixpanel", duration: "10 min", location: "MoneyPot Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 63, day: "Monday Oct 27", time: "13:50", title: "World Cup 2026 – What Can the Payments World Expect?", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 64, day: "Monday Oct 27", time: "14:00", title: "Reimagining Claims & Payments: AI's Role in Healthcare Finance", type: "Panel Discussion", duration: "25 min", location: "Emergent Stage, Money Hall", track: "FinTech Spring" },
+            { id: 65, day: "Monday Oct 27", time: "14:00", title: "This Week in Fintech Podcast-LIVE! 1", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 66, day: "Monday Oct 27", time: "14:10", title: "Making Banking Easier for Businesses, Powered by i-exceed", type: "i-exceed", duration: "10 min", location: "MoneyPot Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 67, day: "Monday Oct 27", time: "14:15", title: "MoneyPot Live: Know Your Agent: Anyone Could Be Smith, Powered by Trulioo", type: "Trulioo", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Securing Trust" },
+            { id: 68, day: "Monday Oct 27", time: "14:25", title: "Loyalty Without Borders: The Future of Global Travel Rewards", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 69, day: "Monday Oct 27", time: "14:30", title: "Open Finance in Latin America: How Embedded Solutions Are Transforming Everyday Lives", type: "BBVA", duration: "25 min", location: "Emergent Stage, Money Hall", track: "FinTech Spring" },
+            { id: 70, day: "Monday Oct 27", time: "14:45", title: "Fintech Business Weekly Podcast-LIVE!", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "FinTech Spring" },
+            { id: 71, day: "Monday Oct 27", time: "14:50", title: "The Unstoppable Blockchain Force Transforming Commercial Payments", type: "Interview", duration: "20 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 72, day: "Monday Oct 27", time: "15:00", title: "The Right Data Cocktail for Lending: Mixing Signals, Serving Scale", type: "Panel Discussion", duration: "30 min", location: "Emergent Stage, Money Hall", track: "FinTech Spring" },
+            { id: 73, day: "Monday Oct 27", time: "15:00", title: "Financial Services, According to Users", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 74, day: "Monday Oct 27", time: "15:10", title: "Road Less Traveled: Data, AI, and Licenses Paving the Future", type: "Panel Discussion", duration: "25 min", location: "Exchange Stage", track: "Age of Infrastructure" },
+            { id: 75, day: "Monday Oct 27", time: "15:10", title: "Payments Evolution: Redefining Engagement Through Integrated Payment Innovation, Powered by Citi", type: "Citi", duration: "1 h", location: "MoneyPot Stage, Money Hall", track: "Global Payments Race" },
+            { id: 76, day: "Monday Oct 27", time: "15:15", title: "How Digital Assets Are Impacting Traditional Market Infrastructure", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 77, day: "Monday Oct 27", time: "15:35", title: "Is Now the Time for a Federal Payments Charter?", type: "Panel Discussion", duration: "20 min", location: "Emergent Stage, Money Hall", track: "Global Payments Race" },
+            { id: 78, day: "Monday Oct 27", time: "15:35", title: "Why the Fintech-Bank Partnership was Doomed Before it Started", type: "Conversation", duration: "25 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 79, day: "Monday Oct 27", time: "15:45", title: "The Disruption is Now Podcast- LIVE! 1", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 80, day: "Monday Oct 27", time: "15:45", title: "This Month in Fintech with Ryan Zauk Podcast-LIVE!", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 81, day: "Monday Oct 27", time: "15:45", title: "Mr Open Banking Podcast-LIVE! 2", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Age of Infrastructure" },
+            { id: 82, day: "Monday Oct 27", time: "15:50", title: "Frenemies, Friction, and the $27T Opportunity: Inside the Stablecoin Revolution", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 83, day: "Monday Oct 27", time: "16:05", title: "Winning the war for low-value cross-border payments", type: "Panel Discussion", duration: "35 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 84, day: "Monday Oct 27", time: "16:25", title: "The New Administration's Pro-Crypto Stance", type: "Interview", duration: "20 min", location: "The Intersection Stage, Money Hall", track: "FinTech Spring" },
+            { id: 85, day: "Monday Oct 27", time: "16:25", title: "BankSocial's NextGen of Innovation", type: "Presentation", duration: "20 min", location: "Emergent Stage, Money Hall", track: "FinTech Spring" },
+            { id: 86, day: "Monday Oct 27", time: "16:30", title: "Simplify Payments Podcast- LIVE!", type: "Podcast", duration: "30 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 87, day: "Monday Oct 27", time: "16:45", title: "When Banking and Bitcoin Collide", type: "Galoy.", duration: "15 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 88, day: "Monday Oct 27", time: "17:00", title: "Monday Night Fintech Party", type: "Networking", duration: "2 h", location: "Money Hall, Level 2", track: "Networking" },
+            
+            // Tuesday October 28 (34 sessions) - Complete details
+            { id: 89, day: "Tuesday Oct 28", time: "09:00", title: "Fintech Confidential Podcast -LIVE! 2", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 90, day: "Tuesday Oct 28", time: "09:15", title: "Outlier Podcast Special-Live! Designing the Next Decade of Credit Unions", type: "Podcast", duration: "45 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Securing Trust" },
+            { id: 91, day: "Tuesday Oct 28", time: "09:25", title: "Beyond Legacy Systems: Building the AI-Powered Financial Tech Stack of Tomorrow", type: "Fireside Chat", duration: "20 min", location: "Exchange Stage", track: "Age of Infrastructure" },
+            { id: 92, day: "Tuesday Oct 28", time: "09:30", title: "Cross-Currency Payments: Breaking Borders, Building Bridges", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 93, day: "Tuesday Oct 28", time: "09:30", title: "From Local Solutions to Global Standards: Latin America's Innovative Payment Vision", type: "Conversation", duration: "25 min", location: "Emergent Stage, Money Hall", track: "Global Payments Race" },
+            { id: 94, day: "Tuesday Oct 28", time: "09:35", title: "The Next Era of Cash Flow Data: Expanding Credit Access", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Age of Infrastructure" },
+            { id: 95, day: "Tuesday Oct 28", time: "09:45", title: "Forward Guidance Podcast- LIVE!", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Securing Trust" },
+            { id: 96, day: "Tuesday Oct 28", time: "10:00", title: "Schrödinger's Security: Is Document Verification Simultaneously Dead and Alive?", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "Securing Trust" },
+            { id: 97, day: "Tuesday Oct 28", time: "10:00", title: "Founder Insights: The Path to Profitability and Global Scale, Powered by PayJoy", type: "PayJoy", duration: "15 min", location: "MoneyPot Stage, Money Hall", track: "Securing Trust, Global Payments Race" },
+            { id: 98, day: "Tuesday Oct 28", time: "10:05", title: "Battle-Hardened Wisdom From Crypto Infrastructure Frontlines", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 99, day: "Tuesday Oct 28", time: "10:10", title: "No‑Checkout Checkout: Identity, Tokens, and the Future of Embedded Payments", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Age of Infrastructure" },
+            { id: 100, day: "Tuesday Oct 28", time: "10:20", title: "Customer Story: Real-Life Journeys of Financial Inclusion, Powered by PayJoy", type: "PayJoy", duration: "15 min", location: "MoneyPot Stage, Money Hall", track: "Securing Trust, Global Payments Race" },
+            { id: 101, day: "Tuesday Oct 28", time: "10:30", title: "Humans of Fintech Podcast-LIVE!", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 102, day: "Tuesday Oct 28", time: "10:30", title: "MoneyPot Live: The Modern CIO Dilemma - Why CIOs Are Set Up To Fail, Powered by Protiviti", type: "Protiviti", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Global Payments Race" },
+            { id: 103, day: "Tuesday Oct 28", time: "10:35", title: "Investor Discussion & AMA: The Future of Impact Investing, Powered by PayJoy", type: "PayJoy", duration: "25 min", location: "MoneyPot Stage, Money Hall", track: "Securing Trust, Global Payments Race" },
+            { id: 104, day: "Tuesday Oct 28", time: "10:40", title: "Friends or Foes? The Era of Coopetition in Cross-Border Payments", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 105, day: "Tuesday Oct 28", time: "10:40", title: "Working with Government in the Age of Trump 2.0", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "Securing Trust" },
+            { id: 106, day: "Tuesday Oct 28", time: "10:50", title: "Reinforcing Payments Strategies for a Fluctuating Global Economy", type: "Panel Discussion", duration: "30 min", location: "Exchange Stage", track: "Global Payments Race" },
+            { id: 107, day: "Tuesday Oct 28", time: "11:10", title: "Tap to Tap: Instant Beer", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 108, day: "Tuesday Oct 28", time: "11:15", title: "AI-Powered Composable FinTech: Configure, Scale, Succeed, Powered by MobiFin", type: "Mobifin", duration: "10 min", location: "MoneyPot Stage, Money Hall", track: "Global Payments Race" },
+            { id: 109, day: "Tuesday Oct 28", time: "11:25", title: "The Era of Agentic Fincrime Compliance Moving at the Speed of AI, Powered by ComplyAdvantage", type: "ComplyAdvantage", duration: "10 min", location: "MoneyPot Stage, Money Hall", track: "Global Payments Race" },
+            { id: 110, day: "Tuesday Oct 28", time: "11:30", title: "Have Stablecoins Found Their True Purpose?", type: "Panel Discussion", duration: "20 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 111, day: "Tuesday Oct 28", time: "11:55", title: "TradFi x DeFi in 2030: A Data-Driven Roadmap for Institutions", type: "Panel Discussion", duration: "35 min", location: "The Intersection Stage, Money Hall", track: "FinTech Spring" },
+            { id: 112, day: "Tuesday Oct 28", time: "12:00", title: "The Payments Shed Podcast- LIVE! 2", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Global Payments Race" },
+            { id: 113, day: "Tuesday Oct 28", time: "12:00", title: "Tackling the $890 Billion Challenge", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Securing Trust" },
+            { id: 114, day: "Tuesday Oct 28", time: "12:15", title: "Mapped Podcast- LIVE!", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Age of Infrastructure" },
+            { id: 115, day: "Tuesday Oct 28", time: "13:15", title: "Fintech One-On-One Podcast- LIVE!", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 116, day: "Tuesday Oct 28", time: "13:30", title: "The Know-Your-Agent (KYA) Problem And Potential Solutions", type: "Fireside Chat", duration: "20 min", location: "Emergent Stage, Money Hall", track: "Securing Trust" },
+            { id: 117, day: "Tuesday Oct 28", time: "13:30", title: "Deciphered Podcast-LIVE!", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Age of Infrastructure" },
+            { id: 118, day: "Tuesday Oct 28", time: "13:45", title: "Breaking Barriers: Unlocking Bitcoin DeFi", type: "Interview", duration: "20 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 119, day: "Tuesday Oct 28", time: "13:45", title: "Expanding Access to Capital for Small Businesses through Revenue-Based Financing", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Age of Infrastructure" },
+            { id: 120, day: "Tuesday Oct 28", time: "13:55", title: "BNPL is Now in Brazil: Zero-Fraud Guarantee for Merchants", type: "Presentation", duration: "12 min", location: "Emergent Stage, Money Hall", track: "Securing Trust" },
+            { id: 121, day: "Tuesday Oct 28", time: "14:00", title: "Smarter Payments, Safer World: Threat Intelligence in Action", type: "Panel Discussion", duration: "30 min", location: "Exchange Stage", track: "Securing Trust" },
+            { id: 122, day: "Tuesday Oct 28", time: "14:00", title: "Trust, Technology, and the High Stakes of Agentic AI Systems in Financial Services, Powered by SoundHound AI", type: "SoundHound", duration: "25 min", location: "MoneyPot Stage, Money Hall", track: "Securing Trust" },
+            { id: 123, day: "Tuesday Oct 28", time: "14:10", title: "Internet Business Models Evolving Through Identity Ownership", type: "Finality Capital Markets", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Securing Trust" },
+            { id: 124, day: "Tuesday Oct 28", time: "14:10", title: "How GenAI Is Transforming Small Business Finance", type: "Panel Discussion", duration: "30 min", location: "Emergent Stage, Money Hall", track: "FinTech Spring" },
+            { id: 125, day: "Tuesday Oct 28", time: "14:15", title: "Bankadelic Podcast-LIVE! 2", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "FinTech Spring" },
+            { id: 126, day: "Tuesday Oct 28", time: "14:20", title: "The Power of Instant Payments", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 127, day: "Tuesday Oct 28", time: "14:25", title: "Trust, Technology, and the High Stakes of Agentic AI Systems in Financial Services, Powered by SoundHound AI", type: "SoundHound AI", duration: "35 min", location: "MoneyPot Stage, Money Hall", track: "Securing Trust" },
+            { id: 128, day: "Tuesday Oct 28", time: "14:30", title: "The Fuzzy Cow Podcast- LIVE! Put Your Money Where Your Heart Is", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 129, day: "Tuesday Oct 28", time: "14:45", title: "How stablecoins are powering a new era of on-chain FX", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 130, day: "Tuesday Oct 28", time: "14:50", title: "BNPL's Double-Edged Sword: Slicing Through Consumer Finance as We Know It", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "FinTech Spring" },
+            { id: 131, day: "Tuesday Oct 28", time: "14:55", title: "It's springtime for bank charters - or is it?", type: "Presentation", duration: "20 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 132, day: "Tuesday Oct 28", time: "15:10", title: "Tech-enabled Credit Access: Financial Inclusion Next Frontier", type: "Panel Discussion", duration: "40 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 133, day: "Tuesday Oct 28", time: "15:15", title: "Fintech Mavericks Podcast-LIVE!", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 134, day: "Tuesday Oct 28", time: "15:20", title: "AI Breaking Digital Asset Boundaries At Warp Speed", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 135, day: "Tuesday Oct 28", time: "15:25", title: "The Shocking Truth Behind Seamless Experiences That Convert Millions", type: "Panel Discussion", duration: "30 min", location: "Emergent Stage, Money Hall", track: "Securing Trust" },
+            { id: 136, day: "Tuesday Oct 28", time: "15:30", title: "AI at the Core: Building the Resilient, Intelligent Bank, Powered by Google Cloud", type: "Google Cloud", duration: "20 min", location: "MoneyPot Stage, Money Hall", track: "Age of Infrastructure, Global Payments Race" },
+            { id: 137, day: "Tuesday Oct 28", time: "15:55", title: "The Next Frontier of Open Banking: Powering Borderless B2B Finance", type: "Panel Discussion", duration: "25 min", location: "The Intersection Stage, Money Hall", track: "Global Payments Race" },
+            { id: 138, day: "Tuesday Oct 28", time: "15:55", title: "All Bets Are On: Navigating Payments Complexity in Regulated Sportsbetting", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "Global Payments Race" },
+            { id: 139, day: "Tuesday Oct 28", time: "16:45", title: "The Disruption is Now Podcast- LIVE! 2", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 140, day: "Tuesday Oct 28", time: "19:30", title: "Industry Night at Voltaire & Money Row", type: "Networking", duration: "4 h 29 min", location: "Money Row", track: "Networking" },
+            
+            // Wednesday October 29 (34 sessions) - Complete details
+            { id: 141, day: "Wednesday Oct 29", time: "09:00", title: "Fintech Confidential Podcast -LIVE! 3", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "FinTech Spring" },
+            { id: 142, day: "Wednesday Oct 29", time: "09:30", title: "The Trust Engine Powering Sustainable Financial Growth", type: "Presentation", duration: "20 min", location: "The Intersection Stage, Money Hall", track: "Securing Trust" },
+            { id: 143, day: "Wednesday Oct 29", time: "09:30", title: "Beyond the Backend: Crafting Customer-First Narratives in Finance", type: "Panel Discussion", duration: "30 min", location: "Emergent Stage, Money Hall", track: "Securing Trust" },
+            { id: 144, day: "Wednesday Oct 29", time: "09:30", title: "Loyalty Infrastructure War: Are Banks, Brands, Platforms Building a Super-App?", type: "Panel Discussion", duration: "30 min", location: "Off The Record Stage, Money Hall", track: "Age of Infrastructure" },
+            { id: 145, day: "Wednesday Oct 29", time: "09:30", title: "An IPO is an Entrance, Not an Exit", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 146, day: "Wednesday Oct 29", time: "09:55", title: "Building Growth Foundations Through Community When AI Rewrites SEO Rules", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Securing Trust" },
+            { id: 147, day: "Wednesday Oct 29", time: "10:05", title: "Commercializing Innovation: A CMO's Crash Course in B2B Product Launches", type: "Conversation", duration: "20 min", location: "Emergent Stage, Money Hall", track: "Securing Trust" },
+            { id: 148, day: "Wednesday Oct 29", time: "10:15", title: "The Disruption is Now Podcast- LIVE! 3", type: "Podcast", duration: "40 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 149, day: "Wednesday Oct 29", time: "10:20", title: "Women Leading with Cognitive Banking: Monetizing AI While Building Trust", type: "Panel Discussion", duration: "30 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 150, day: "Wednesday Oct 29", time: "10:28", title: "No More Paper Cuts: Transforming Financial Marketing with Real-Time Data", type: "Conversation", duration: "20 min", location: "Emergent Stage, Money Hall", track: "FinTech Spring" },
+            { id: 151, day: "Wednesday Oct 29", time: "10:30", title: "Invisible in AI: The New Threat to Fintech Brands", type: "Presentation", duration: "15 min", location: "The Intersection Stage, Money Hall", track: "Securing Trust" },
+            { id: 152, day: "Wednesday Oct 29", time: "10:35", title: "Morning Market Briefing Podcast- LIVE! Leveraging a Firm Podcast to Educate Clients and Build Trust", type: "Podcast", duration: "25 min", location: "MoneyPot Podcast Booth 2, Money Hall", track: "Securing Trust" },
+            { id: 153, day: "Wednesday Oct 29", time: "10:50", title: "Debunking The Privacy Myth In Next-Gen Financial Personalization", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "Securing Trust" },
+            { id: 154, day: "Wednesday Oct 29", time: "10:55", title: "Fintechs Using AI to Cut Costs and Gain Market Share", type: "Panel Discussion", duration: "25 min", location: "Converge Stage powered by Convera, Money Hall", track: "FinTech Spring" },
+            { id: 155, day: "Wednesday Oct 29", time: "11:00", title: "Around the Coin Podcast- LIVE!", type: "Podcast", duration: "30 min", location: "MoneyPot Podcast Booth 1, Money Hall", track: "Age of Infrastructure" },
+            { id: 156, day: "Wednesday Oct 29", time: "11:10", title: "The Future of Financial Services: AI, Trust, and Human Connection", type: "Panel Discussion", duration: "30 min", location: "The Intersection Stage, Money Hall", track: "FinTech Spring" }
+        ];
+
+        let currentDayFilter = 'All';
+        let currentTrackFilter = 'All';
+        let currentParticipantFilter = 'All';
+        let syncInterval = null;
+        let lastSyncTime = 0;
+
+        function renderSessions() {
+            const container = document.getElementById('sessions-container');
+            
+            const filteredSessions = sessions.filter(session => {
+                const dayMatch = currentDayFilter === 'All' || session.day === currentDayFilter;
+                const trackMatch = currentTrackFilter === 'All' || session.track === currentTrackFilter;
+                const participantMatch = currentParticipantFilter === 'All' || 
+                    (currentParticipantFilter === 'Me' && session.participants && session.participants.includes(document.getElementById('participant-name').value));
+                return dayMatch && trackMatch && participantMatch;
+            });
+
+            let html = '';
+            let lastDay = '';
+
+            filteredSessions.forEach(session => {
+                if (session.day !== lastDay) {
+                    html += `<div class="day-header">${session.day}</div>`;
+                    lastDay = session.day;
+                }
+
+                const participants = session.participants || [];
+                const participantNames = participants.join(', ');
+                const currentUser = document.getElementById('participant-name').value;
+                const isAttending = participants.includes(currentUser);
+                
+                html += `
+                    <div class="session" ${session.isPartnerMeeting ? `onclick="showPartnerMeetingDetails(${session.id})" style="cursor: pointer;"` : ''}>
+                        <div class="session-time">${session.time}</div>
+                        <div class="session-title">${session.title}</div>
+                        <div class="session-details">${session.type} • ${session.duration} • ${session.location} • ${session.track}</div>
+                        ${participantNames ? `<div style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Attending:</strong> ${participantNames}</div>` : ''}
+                        <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                            ${session.isPartnerMeeting ? `<button onclick="event.stopPropagation(); editPartnerMeeting(${session.id})" style="background: #0A8080; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">Edit Meeting</button><button onclick="event.stopPropagation(); deletePartnerMeeting(${session.id})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">Delete Meeting</button>` : ''}
+                            <button onclick="event.stopPropagation(); toggleParticipation(${session.id})" style="background: ${isAttending ? '#dc3545' : '#28a745'}; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">${isAttending ? 'Leave' : 'Join'}</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            document.getElementById('filtered-count').textContent = filteredSessions.length;
+        }
+
+        function filterDay(day) {
+            currentDayFilter = day;
+            document.querySelectorAll('#day-filters .filter-tag').forEach(tag => {
+                tag.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderSessions();
+        }
+
+        function filterTrack(track) {
+            currentTrackFilter = track;
+            document.querySelectorAll('#track-filters .filter-tag').forEach(tag => {
+                tag.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderSessions();
+        }
+
+        function filterParticipant(participant) {
+            currentParticipantFilter = participant;
+            document.querySelectorAll('#participant-filters .filter-tag').forEach(tag => {
+                tag.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            renderSessions();
+        }
+
+        function toggleParticipation(sessionId) {
+            const currentUser = document.getElementById('participant-name').value;
+            if (!currentUser) {
+                alert('Please enter your name first!');
+                return;
+            }
+
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+
+            if (!session.participants) {
+                session.participants = [];
+            }
+
+            const participantIndex = session.participants.indexOf(currentUser);
+            if (participantIndex > -1) {
+                // Remove participant
+                session.participants.splice(participantIndex, 1);
+            } else {
+                // Add participant
+                session.participants.push(currentUser);
+            }
+
+            renderSessions();
+            
+            // Auto-save to localStorage for real-time sync
+            saveParticipantsToStorage();
+        }
+
+        // Real-time sync functions
+        function saveParticipantsToStorage() {
+            const participantData = [];
+            sessions.forEach(session => {
+                if (session.participants && session.participants.length > 0) {
+                    participantData.push({
+                        sessionId: session.id,
+                        participants: session.participants
+                    });
+                }
+            });
+            
+            const syncData = {
+                participants: participantData,
+                timestamp: Date.now(),
+                user: document.getElementById('participant-name').value || 'Anonymous'
+            };
+            
+            localStorage.setItem('conference_participants', JSON.stringify(syncData));
+        }
+
+        function loadParticipantsFromStorage() {
+            try {
+                const stored = localStorage.getItem('conference_participants');
+                if (!stored) return false;
+                
+                const syncData = JSON.parse(stored);
+                const now = Date.now();
+                
+                // Only load if data is recent (within 5 minutes)
+                if (now - syncData.timestamp > 5 * 60 * 1000) {
+                    return false;
+                }
+                
+                // Clear existing participants
+                sessions.forEach(session => {
+                    session.participants = [];
+                });
+                
+                // Load participant data
+                syncData.participants.forEach(entry => {
+                    const session = sessions.find(s => s.id === entry.sessionId);
+                    if (session) {
+                        session.participants = [...entry.participants];
+                    }
+                });
+                
+                return true;
+            } catch (error) {
+                console.log('Error loading participants from storage:', error);
+                return false;
+            }
+        }
+
+        function syncWithTeam() {
+            if (loadParticipantsFromStorage()) {
+                renderSessions();
+                alert('✅ Synced with team! You can see the latest participant data.');
+            } else {
+                alert('ℹ️ No recent team data found. Make sure your team members have used the dashboard recently.');
+            }
+        }
+
+        function startRealTimeSync() {
+            // Check for updates every 2 seconds
+            syncInterval = setInterval(() => {
+                if (loadParticipantsFromStorage()) {
+                    renderSessions();
+                }
+            }, 2000);
+        }
+
+        function stopRealTimeSync() {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+        }
+
+        // Simple share link functions
+        function generateShareLink() {
+            // Collect all participant data
+            const participantData = [];
+            sessions.forEach(session => {
+                if (session.participants && session.participants.length > 0) {
+                    session.participants.forEach(participant => {
+                        participantData.push({
+                            sessionId: session.id,
+                            participant: participant
+                        });
+                    });
+                }
+            });
+
+            // Create a simple data string
+            const dataString = JSON.stringify(participantData);
+            
+            // Create a shareable URL with the data
+            const baseUrl = window.location.href.split('?')[0];
+            const shareUrl = `${baseUrl}?data=${encodeURIComponent(dataString)}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('Share link copied to clipboard! Send this link to your team members.\n\n' + shareUrl);
+            }).catch(() => {
+                // Fallback if clipboard doesn't work
+                prompt('Copy this share link and send it to your team:', shareUrl);
+            });
+        }
+
+        function loadFromShareLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataString = urlParams.get('data');
+            
+            if (!dataString) {
+                alert('No participant data found in the URL. Make sure you\'re using a share link generated by the dashboard.');
+                return;
+            }
+
+            try {
+                const participantData = JSON.parse(decodeURIComponent(dataString));
+                
+                // Clear existing participants
+                sessions.forEach(session => {
+                    session.participants = [];
+                });
+                
+                // Load participant data
+                participantData.forEach(entry => {
+                    const session = sessions.find(s => s.id === entry.sessionId);
+                    if (session) {
+                        if (!session.participants) {
+                            session.participants = [];
+                        }
+                        if (!session.participants.includes(entry.participant)) {
+                            session.participants.push(entry.participant);
+                        }
+                    }
+                });
+                
+                renderSessions();
+                alert('Participant data loaded successfully! You can now see who\'s attending each session.');
+                
+                // Clean up the URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+            } catch (error) {
+                alert('Error loading participant data: ' + error.message);
+            }
+        }
+
+        // Alternative: Export/Import functionality
+        function exportParticipants() {
+            const participantData = [];
+            sessions.forEach(session => {
+                if (session.participants && session.participants.length > 0) {
+                    session.participants.forEach(participant => {
+                        participantData.push({
+                            sessionId: session.id,
+                            sessionTitle: session.title,
+                            participant: participant,
+                            day: session.day,
+                            time: session.time
+                        });
+                    });
+                }
+            });
+
+            const dataStr = JSON.stringify(participantData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'participants.json';
+            link.click();
+        }
+
+        function importParticipants() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const participantData = JSON.parse(e.target.result);
+                            
+                            // Clear existing participants
+                            sessions.forEach(session => {
+                                session.participants = [];
+                            });
+                            
+                            // Load new participant data
+                            participantData.forEach(entry => {
+                                const session = sessions.find(s => s.id === entry.sessionId);
+                                if (session) {
+                                    if (!session.participants) {
+                                        session.participants = [];
+                                    }
+                                    if (!session.participants.includes(entry.participant)) {
+                                        session.participants.push(entry.participant);
+                                    }
+                                }
+                            });
+                            
+                            renderSessions();
+                            alert('Participants imported successfully!');
+                        } catch (error) {
+                            alert('Error importing participants: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        // Partner meetings array to store custom meetings
+        let partnerMeetings = [];
+        let nextMeetingId = 1000; // Start partner meeting IDs from 1000
+        let editingMeetingId = null; // Track which meeting is being edited
+
+        function showPartnerMeetingForm() {
+            editingMeetingId = null; // Reset editing state
+            document.getElementById('partner-meeting-modal').style.display = 'block';
+            document.getElementById('partner-meeting-form').reset();
+            document.querySelector('#partner-meeting-modal h2').textContent = 'Add Partner Meeting';
+            document.querySelector('#partner-meeting-form button[type="submit"]').textContent = 'Add Meeting';
+        }
+
+        function editPartnerMeeting(meetingId) {
+            const meeting = sessions.find(session => session.id === meetingId);
+            if (!meeting) return;
+
+            editingMeetingId = meetingId;
+            document.getElementById('partner-meeting-modal').style.display = 'block';
+            
+            // Populate form with existing data
+            document.getElementById('meeting-title').value = meeting.title.replace('Partner Meeting: ', '');
+            document.getElementById('meeting-date').value = meeting.day;
+            document.getElementById('meeting-time').value = meeting.time;
+            document.getElementById('meeting-location').value = meeting.location;
+            document.getElementById('meeting-attendees').value = meeting.attendees;
+            document.getElementById('meeting-duration').value = meeting.duration;
+            
+            // Update form title and button
+            document.querySelector('#partner-meeting-modal h2').textContent = 'Edit Partner Meeting';
+            document.querySelector('#partner-meeting-form button[type="submit"]').textContent = 'Update Meeting';
+        }
+
+        function hidePartnerMeetingForm() {
+            document.getElementById('partner-meeting-modal').style.display = 'none';
+            document.getElementById('partner-meeting-form').reset();
+            editingMeetingId = null;
+        }
+
+        function showPartnerMeetingDetails(meetingId) {
+            const meeting = sessions.find(session => session.id === meetingId);
+            if (!meeting) return;
+
+            const detailsContent = `
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Meeting Title:</strong><br>
+                    <span>${meeting.title}</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Date & Time:</strong><br>
+                    <span>${meeting.day} at ${meeting.time}</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Duration:</strong><br>
+                    <span>${meeting.duration}</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Location:</strong><br>
+                    <span>${meeting.location}</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Attendees:</strong><br>
+                    <span>${meeting.attendees}</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Type:</strong><br>
+                    <span>${meeting.type}</span>
+                </div>
+            `;
+
+            document.getElementById('meeting-details-content').innerHTML = detailsContent;
+            document.getElementById('partner-meeting-details-modal').style.display = 'block';
+        }
+
+        function hidePartnerMeetingDetails() {
+            document.getElementById('partner-meeting-details-modal').style.display = 'none';
+        }
+
+        function addPartnerMeeting(meetingData) {
+            const meeting = {
+                id: nextMeetingId++,
+                day: meetingData.date,
+                time: meetingData.time,
+                title: `Partner Meeting: ${meetingData.title}`,
+                type: "Partner Meeting",
+                duration: meetingData.duration,
+                location: meetingData.location,
+                track: "Partner Meeting",
+                attendees: meetingData.attendees,
+                isPartnerMeeting: true // Flag to identify partner meetings
+            };
+            
+            partnerMeetings.push(meeting);
+            
+            // Add to main sessions array for display
+            sessions.push(meeting);
+            
+            // Sort sessions by day and time to maintain chronological order
+            sessions.sort((a, b) => {
+                // First sort by day
+                const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                const dayA = dayOrder.indexOf(a.day);
+                const dayB = dayOrder.indexOf(b.day);
+                
+                if (dayA !== dayB) {
+                    return dayA - dayB;
+                }
+                
+                // Then sort by time within the same day
+                return a.time.localeCompare(b.time);
+            });
+            
+            // Update total count
+            document.getElementById('total-sessions').textContent = sessions.length;
+            
+            // Re-render sessions
+            renderSessions();
+            
+            // Hide form
+            hidePartnerMeetingForm();
+            
+            alert('Partner meeting added successfully!');
+        }
+
+        function updatePartnerMeeting(meetingId, meetingData) {
+            // Find and update the meeting in partnerMeetings array
+            const partnerIndex = partnerMeetings.findIndex(meeting => meeting.id === meetingId);
+            if (partnerIndex > -1) {
+                partnerMeetings[partnerIndex] = {
+                    ...partnerMeetings[partnerIndex],
+                    day: meetingData.date,
+                    time: meetingData.time,
+                    title: `Partner Meeting: ${meetingData.title}`,
+                    duration: meetingData.duration,
+                    location: meetingData.location,
+                    attendees: meetingData.attendees
+                };
+            }
+
+            // Find and update the meeting in main sessions array
+            const sessionIndex = sessions.findIndex(session => session.id === meetingId);
+            if (sessionIndex > -1) {
+                sessions[sessionIndex] = {
+                    ...sessions[sessionIndex],
+                    day: meetingData.date,
+                    time: meetingData.time,
+                    title: `Partner Meeting: ${meetingData.title}`,
+                    duration: meetingData.duration,
+                    location: meetingData.location,
+                    attendees: meetingData.attendees
+                };
+            }
+
+            // Sort sessions by day and time to maintain chronological order
+            sessions.sort((a, b) => {
+                // First sort by day
+                const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                const dayA = dayOrder.indexOf(a.day);
+                const dayB = dayOrder.indexOf(b.day);
+                
+                if (dayA !== dayB) {
+                    return dayA - dayB;
+                }
+                
+                // Then sort by time within the same day
+                return a.time.localeCompare(b.time);
+            });
+
+            // Re-render sessions
+            renderSessions();
+            
+            // Hide form
+            hidePartnerMeetingForm();
+            
+            alert('Partner meeting updated successfully!');
+        }
+
+        function deletePartnerMeeting(meetingId) {
+            if (confirm('Are you sure you want to delete this partner meeting?')) {
+                // Remove from partnerMeetings array
+                partnerMeetings = partnerMeetings.filter(meeting => meeting.id !== meetingId);
+                
+                // Remove from main sessions array
+                const sessionIndex = sessions.findIndex(session => session.id === meetingId);
+                if (sessionIndex > -1) {
+                    sessions.splice(sessionIndex, 1);
+                }
+                
+                // Sort sessions by day and time to maintain chronological order
+                sessions.sort((a, b) => {
+                    // First sort by day
+                    const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                    const dayA = dayOrder.indexOf(a.day);
+                    const dayB = dayOrder.indexOf(b.day);
+                    
+                    if (dayA !== dayB) {
+                        return dayA - dayB;
+                    }
+                    
+                    // Then sort by time within the same day
+                    return a.time.localeCompare(b.time);
+                });
+                
+                // Update total count
+                document.getElementById('total-sessions').textContent = sessions.length;
+                
+                // Re-render sessions
+                renderSessions();
+                
+                alert('Partner meeting deleted successfully!');
+            }
+        }
+
+        // Handle form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('partner-meeting-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const meetingData = {
+                    title: document.getElementById('meeting-title').value,
+                    date: document.getElementById('meeting-date').value,
+                    time: document.getElementById('meeting-time').value,
+                    location: document.getElementById('meeting-location').value,
+                    attendees: document.getElementById('meeting-attendees').value,
+                    duration: document.getElementById('meeting-duration').value
+                };
+                
+                if (editingMeetingId) {
+                    updatePartnerMeeting(editingMeetingId, meetingData);
+                } else {
+                    addPartnerMeeting(meetingData);
+                }
+            });
+        });
+
+        window.onload = function() {
+            document.getElementById('total-sessions').textContent = sessions.length;
+            
+            // Auto-load participant data from share link if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataString = urlParams.get('data');
+            if (dataString) {
+                try {
+                    const participantData = JSON.parse(decodeURIComponent(dataString));
+                    
+                    // Clear existing participants
+                    sessions.forEach(session => {
+                        session.participants = [];
+                    });
+                    
+                    // Load participant data
+                    participantData.forEach(entry => {
+                        const session = sessions.find(s => s.id === entry.sessionId);
+                        if (session) {
+                            if (!session.participants) {
+                                session.participants = [];
+                            }
+                            if (!session.participants.includes(entry.participant)) {
+                                session.participants.push(entry.participant);
+                            }
+                        }
+                    });
+                    
+                    // Clean up the URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                } catch (error) {
+                    console.log('Could not load participant data from URL:', error);
+                }
+            } else {
+                // Load from localStorage if no share link
+                loadParticipantsFromStorage();
+            }
+            
+            renderSessions();
+            
+            // Start real-time sync
+            startRealTimeSync();
+        };
+    </script>
+</body>
+</html>
