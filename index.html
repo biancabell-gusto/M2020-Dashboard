@@ -72,6 +72,38 @@
                 top: 45px !important;
                 right: 15px !important;
             }
+            #desktop-menu-btn {
+                display: none !important;
+            }
+        }
+        
+        /* Desktop menu button styles */
+        #desktop-menu-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #F45D48;
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: background-color 0.3s;
+        }
+        #desktop-menu-btn:hover {
+            background: #e04a3a;
+        }
+        
+        /* Desktop sidebar when closed */
+        .sidebar.closed {
+            left: -300px;
+            visibility: hidden;
+        }
+        
+        .main.sidebar-closed {
+            margin-left: 0;
         }
         .filter-tag { background: #f8f9fa; border: 1px solid #ddd; padding: 8px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; margin: 2px; display: inline-block; }
         .filter-tag:hover { background: #e9ecef; }
@@ -158,6 +190,9 @@
 <body>
     <div class="header">
         <button id="mobile-menu-btn" onclick="toggleSidebar()" style="display: none; position: absolute; top: 45px; right: 15px; background: #F45D48; color: white; border: none; padding: 8px; border-radius: 4px; font-size: 18px; cursor: pointer;">
+            ☰
+        </button>
+        <button id="desktop-menu-btn" onclick="toggleSidebar()" style="display: none; position: absolute; top: 15px; right: 15px; background: #F45D48; color: white; border: none; padding: 8px; border-radius: 4px; font-size: 16px; cursor: pointer; z-index: 1000;">
             ☰
         </button>
         <h1 class="title">
@@ -724,6 +759,7 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
+            const isMobile = window.innerWidth <= 768;
             
             if (sidebar.classList.contains('open')) {
                 closeSidebar();
@@ -735,29 +771,54 @@
         function openSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
+            const main = document.querySelector('.main');
+            const isMobile = window.innerWidth <= 768;
+            
             sidebar.classList.add('open');
-            overlay.classList.add('show');
+            sidebar.classList.remove('closed');
+            main.classList.remove('sidebar-closed');
+            
+            if (isMobile && overlay) {
+                overlay.classList.add('show');
+            }
         }
 
         function closeSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
+            const main = document.querySelector('.main');
+            const isMobile = window.innerWidth <= 768;
+            
             sidebar.classList.remove('open');
-            overlay.classList.remove('show');
+            sidebar.classList.add('closed');
+            main.classList.add('sidebar-closed');
+            
+            if (isMobile && overlay) {
+                overlay.classList.remove('show');
+            }
         }
 
         // Check if mobile and show/hide hamburger menu
         function checkMobile() {
             const isMobile = window.innerWidth <= 768;
-            const menuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const desktopMenuBtn = document.getElementById('desktop-menu-btn');
             const sidebar = document.getElementById('sidebar');
+            const main = document.querySelector('.main');
             
             if (isMobile) {
-                menuBtn.style.display = 'block';
+                mobileMenuBtn.style.display = 'block';
+                desktopMenuBtn.style.display = 'none';
                 sidebar.classList.remove('open');
+                main.classList.remove('sidebar-closed');
             } else {
-                menuBtn.style.display = 'none';
-                sidebar.classList.remove('open');
+                mobileMenuBtn.style.display = 'none';
+                desktopMenuBtn.style.display = 'block';
+                // On desktop, start with sidebar open by default
+                if (!sidebar.classList.contains('open') && !sidebar.classList.contains('closed')) {
+                    sidebar.classList.add('open');
+                    main.classList.remove('sidebar-closed');
+                }
             }
         }
 
