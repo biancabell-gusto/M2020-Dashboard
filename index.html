@@ -73,7 +73,6 @@
             <div id="participant-filters">
                 <div class="filter-tag active" onclick="filterParticipant('All')">All</div>
                 <div class="filter-tag" onclick="filterParticipant('Me')">My Sessions</div>
-                <div class="filter-tag" onclick="filterParticipant('Team')">Team Sessions</div>
             </div>
             
             
@@ -362,9 +361,6 @@
                 let participantMatch = true;
                 if (currentParticipantFilter === 'Me') {
                     participantMatch = session.participants && session.participants.includes(currentUser);
-                } else if (currentParticipantFilter === 'Team') {
-                    // Show sessions where anyone is attending (simplified team filter)
-                    participantMatch = session.participants && session.participants.length > 0;
                 }
                 
                 return dayMatch && trackMatch && participantMatch;
