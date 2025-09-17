@@ -394,9 +394,10 @@
                         <div class="session-time">${session.time}</div>
                         <div class="session-title">${session.title}</div>
                         <div class="session-details">${session.type} • ${session.duration} • ${session.location} • ${session.track}</div>
+                        ${session.isPartnerMeeting && session.createdBy ? `<div style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Created by:</strong> <span style="color: #F45D48; font-weight: bold;">${session.createdBy}</span>${session.lastModifiedBy && session.lastModifiedBy !== session.createdBy ? ` • <strong>Modified by:</strong> <span style="color: #0A8080; font-weight: bold;">${session.lastModifiedBy}</span>` : ''}</div>` : ''}
                         ${participantNames ? `<div style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Attending:</strong> ${highlightedParticipants}</div>` : ''}
                         <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
-                            ${session.isPartnerMeeting ? `<button onclick="event.stopPropagation(); editPartnerMeeting(${session.id})" style="background: #0A8080; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">Edit Meeting</button><button onclick="event.stopPropagation(); deletePartnerMeeting(${session.id})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">Delete Meeting</button>` : ''}
+                            ${session.isPartnerMeeting ? `<button onclick="event.stopPropagation(); editPartnerMeeting(${session.id})" style="background: #0A8080; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;" title="Any team member can edit this meeting">✏️ Edit Meeting</button><button onclick="event.stopPropagation(); deletePartnerMeeting(${session.id})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;" title="Any team member can delete this meeting">🗑️ Delete Meeting</button>` : ''}
                             <button onclick="event.stopPropagation(); toggleParticipation(${session.id})" style="background: ${isAttending ? '#dc3545' : '#28a745'}; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">${isAttending ? 'Leave' : 'Join'}</button>
                         </div>
                     </div>
@@ -625,6 +626,17 @@
                     <span>${meeting.attendees}</span>
                 </div>
                 <div style="margin-bottom: 15px;">
+                    <strong style="color: #F45D48;">Created by:</strong><br>
+                    <span style="color: #F45D48; font-weight: bold;">${meeting.createdBy || 'Unknown'}</span>
+                </div>
+                ${meeting.lastModifiedBy && meeting.lastModifiedBy !== meeting.createdBy ? `
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #0A8080;">Last modified by:</strong><br>
+                    <span style="color: #0A8080; font-weight: bold;">${meeting.lastModifiedBy}</span>
+                    ${meeting.lastModifiedAt ? `<br><small style="color: #666;">${new Date(meeting.lastModifiedAt).toLocaleString()}</small>` : ''}
+                </div>
+                ` : ''}
+                <div style="margin-bottom: 15px;">
                     <strong style="color: #F45D48;">Type:</strong><br>
                     <span>${meeting.type}</span>
                 </div>
@@ -649,7 +661,9 @@
                 location: meetingData.location,
                 track: "Partner Meeting",
                 attendees: meetingData.attendees,
-                isPartnerMeeting: true // Flag to identify partner meetings
+                isPartnerMeeting: true, // Flag to identify partner meetings
+                createdBy: currentUser || 'Unknown', // Track who created the meeting
+                createdAt: new Date().toISOString()
             };
             
             partnerMeetings.push(meeting);
@@ -695,7 +709,9 @@
                     title: `Partner Meeting: ${meetingData.title}`,
                     duration: meetingData.duration,
                     location: meetingData.location,
-                    attendees: meetingData.attendees
+                    attendees: meetingData.attendees,
+                    lastModifiedBy: currentUser || 'Unknown',
+                    lastModifiedAt: new Date().toISOString()
                 };
             }
 
@@ -709,7 +725,9 @@
                     title: `Partner Meeting: ${meetingData.title}`,
                     duration: meetingData.duration,
                     location: meetingData.location,
-                    attendees: meetingData.attendees
+                    attendees: meetingData.attendees,
+                    lastModifiedBy: currentUser || 'Unknown',
+                    lastModifiedAt: new Date().toISOString()
                 };
             }
 
