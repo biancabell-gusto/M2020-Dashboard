@@ -21,7 +21,7 @@
         /* Mobile Responsive */
         @media (max-width: 768px) {
             body { padding: 5px; }
-            .header { padding: 10px; margin-bottom: 10px; }
+            .header { padding: 10px; margin-bottom: 10px; position: relative; }
             .title { font-size: 18px; }
             .logo { width: 20px; height: 20px; margin-right: 6px; }
             .content { 
@@ -30,11 +30,37 @@
                 gap: 10px; 
             }
             .sidebar { 
-                margin-bottom: 10px; 
-                padding: 10px; 
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 280px;
+                height: 100vh;
+                background: white;
+                z-index: 1000;
+                transition: left 0.3s ease;
+                padding: 20px;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                overflow-y: auto;
+            }
+            .sidebar.open {
+                left: 0;
             }
             .main { 
                 padding: 10px; 
+                width: 100%;
+            }
+            .mobile-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+                display: none;
+            }
+            .mobile-overlay.show {
+                display: block;
             }
         }
         .filter-tag { background: #f8f9fa; border: 1px solid #ddd; padding: 8px 12px; border-radius: 16px; cursor: pointer; font-size: 12px; margin: 2px; display: inline-block; }
@@ -121,6 +147,9 @@
 </head>
 <body>
     <div class="header">
+        <button id="mobile-menu-btn" onclick="toggleSidebar()" style="display: none; position: absolute; top: 15px; right: 15px; background: #F45D48; color: white; border: none; padding: 8px; border-radius: 4px; font-size: 18px; cursor: pointer;">
+            ☰
+        </button>
         <h1 class="title">
             <span class="logo">G</span>
             Money 2020 Conference Dashboard
@@ -195,12 +224,12 @@
         </div>
 
         <div class="main" id="sessions-container">
-            <button id="mobile-toggle" onclick="toggleSidebar()" style="display: none; width: 100%; background: #F45D48; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; font-size: 16px;">
-                ✕ Hide Filters
-            </button>
             <!-- Sessions will load here -->
         </div>
     </div>
+
+    <!-- Mobile overlay for sidebar -->
+    <div class="mobile-overlay" id="mobile-overlay" onclick="closeSidebar()"></div>
 
     <!-- Partner Meeting Details Modal -->
     <div id="partner-meeting-details-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
@@ -684,30 +713,41 @@
         // Mobile sidebar toggle
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const toggle = document.getElementById('mobile-toggle');
+            const overlay = document.getElementById('mobile-overlay');
             
-            if (sidebar.style.display === 'none') {
-                sidebar.style.display = 'block';
-                toggle.textContent = '✕ Hide Filters';
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
             } else {
-                sidebar.style.display = 'none';
-                toggle.textContent = '🔍 Show Filters';
+                openSidebar();
             }
         }
 
-        // Check if mobile and show/hide toggle button
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            sidebar.classList.add('open');
+            overlay.classList.add('show');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+
+        // Check if mobile and show/hide hamburger menu
         function checkMobile() {
             const isMobile = window.innerWidth <= 768;
-            const toggle = document.getElementById('mobile-toggle');
+            const menuBtn = document.getElementById('mobile-menu-btn');
             const sidebar = document.getElementById('sidebar');
             
             if (isMobile) {
-                toggle.style.display = 'block';
-                // Show sidebar by default on mobile for better UX
-                sidebar.style.display = 'block';
+                menuBtn.style.display = 'block';
+                sidebar.classList.remove('open');
             } else {
-                toggle.style.display = 'none';
-                sidebar.style.display = 'block';
+                menuBtn.style.display = 'none';
+                sidebar.classList.remove('open');
             }
         }
 
