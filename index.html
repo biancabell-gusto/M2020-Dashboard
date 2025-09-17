@@ -70,6 +70,12 @@
             <div id="participant-filters">
                 <div class="filter-tag active" onclick="filterParticipant('All')">All</div>
                 <div class="filter-tag" onclick="filterParticipant('Me')">My Sessions</div>
+                <div class="filter-tag" onclick="filterParticipant('Team')">Team Sessions</div>
+            </div>
+            
+            <h3>Team Members</h3>
+            <div id="team-members-list" style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                <div>Loading team members...</div>
             </div>
             
             <div style="margin-top: 20px; margin-bottom: 20px;">
@@ -345,6 +351,8 @@
         let currentParticipantFilter = 'All';
         let syncInterval = null;
         let lastSyncTime = 0;
+        let teamMembers = new Set();
+        let currentUser = '';
 
         function renderSessions() {
             const container = document.getElementById('sessions-container');
@@ -352,8 +360,14 @@
             const filteredSessions = sessions.filter(session => {
                 const dayMatch = currentDayFilter === 'All' || session.day === currentDayFilter;
                 const trackMatch = currentTrackFilter === 'All' || session.track === currentTrackFilter;
-                const participantMatch = currentParticipantFilter === 'All' || 
-                    (currentParticipantFilter === 'Me' && session.participants && session.participants.includes(document.getElementById('participant-name').value));
+                
+                let participantMatch = true;
+                if (currentParticipantFilter === 'Me') {
+                    participantMatch = session.participants && session.participants.includes(currentUser);
+                } else if (currentParticipantFilter === 'Team') {
+                    participantMatch = session.participants && session.participants.some(participant => teamMembers.has(participant));
+                }
+                
                 return dayMatch && trackMatch && participantMatch;
             });
 
@@ -368,15 +382,19 @@
 
                 const participants = session.participants || [];
                 const participantNames = participants.join(', ');
-                const currentUser = document.getElementById('participant-name').value;
                 const isAttending = participants.includes(currentUser);
+                
+                // Highlight team members in participant list
+                const highlightedParticipants = participants.map(p => 
+                    teamMembers.has(p) ? `<strong style="color: #F45D48;">${p}</strong>` : p
+                ).join(', ');
                 
                 html += `
                     <div class="session" ${session.isPartnerMeeting ? `onclick="showPartnerMeetingDetails(${session.id})" style="cursor: pointer;"` : ''}>
                         <div class="session-time">${session.time}</div>
                         <div class="session-title">${session.title}</div>
                         <div class="session-details">${session.type} • ${session.duration} • ${session.location} • ${session.track}</div>
-                        ${participantNames ? `<div style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Attending:</strong> ${participantNames}</div>` : ''}
+                        ${participantNames ? `<div style="margin-top: 5px; font-size: 12px; color: #666;"><strong>Attending:</strong> ${highlightedParticipants}</div>` : ''}
                         <div style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
                             ${session.isPartnerMeeting ? `<button onclick="event.stopPropagation(); editPartnerMeeting(${session.id})" style="background: #0A8080; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">Edit Meeting</button><button onclick="event.stopPropagation(); deletePartnerMeeting(${session.id})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">Delete Meeting</button>` : ''}
                             <button onclick="event.stopPropagation(); toggleParticipation(${session.id})" style="background: ${isAttending ? '#dc3545' : '#28a745'}; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">${isAttending ? 'Leave' : 'Join'}</button>
@@ -417,10 +435,17 @@
         }
 
         function toggleParticipation(sessionId) {
-            const currentUser = document.getElementById('participant-name').value;
-            if (!currentUser) {
+            const newCurrentUser = document.getElementById('participant-name').value;
+            if (!newCurrentUser) {
                 alert('Please enter your name first!');
                 return;
+            }
+
+            // Update current user if changed
+            if (newCurrentUser !== currentUser) {
+                currentUser = newCurrentUser;
+                teamMembers.add(currentUser);
+                updateTeamMembersList();
             }
 
             const session = sessions.find(s => s.id === sessionId);
@@ -460,11 +485,11 @@
             const syncData = {
                 participants: participantData,
                 timestamp: Date.now(),
-                user: document.getElementById('participant-name').value || 'Anonymous'
+                user: currentUser || 'Anonymous',
+                teamMembers: Array.from(teamMembers)
             };
             
             localStorage.setItem('conference_participants', JSON.stringify(syncData));
-            
         }
 
 
@@ -494,6 +519,12 @@
                     }
                 });
                 
+                // Update team members
+                if (syncData.teamMembers) {
+                    syncData.teamMembers.forEach(member => teamMembers.add(member));
+                    updateTeamMembersList();
+                }
+                
                 return true;
             } catch (error) {
                 console.log('Error loading participants from storage:', error);
@@ -501,13 +532,25 @@
             }
         }
 
+        function updateTeamMembersList() {
+            const teamList = document.getElementById('team-members-list');
+            if (teamMembers.size === 0) {
+                teamList.innerHTML = '<div>No team members yet</div>';
+            } else {
+                const membersArray = Array.from(teamMembers);
+                teamList.innerHTML = membersArray.map(member => 
+                    `<div style="margin: 2px 0; padding: 2px 6px; background: #f8f9fa; border-radius: 3px; display: inline-block; margin-right: 5px;">${member}</div>`
+                ).join('');
+            }
+        }
+
         function startRealTimeSync() {
-            // Check for updates every 2 seconds
+            // Check for updates every 1 second for better real-time experience
             syncInterval = setInterval(() => {
                 if (loadParticipantsFromStorage()) {
                     renderSessions();
                 }
-            }, 2000);
+            }, 1000);
         }
 
         function stopRealTimeSync() {
@@ -750,6 +793,17 @@
                     addPartnerMeeting(meetingData);
                 }
             });
+
+            // Listen for name changes
+            document.getElementById('participant-name').addEventListener('input', function(e) {
+                const newName = e.target.value.trim();
+                if (newName && newName !== currentUser) {
+                    currentUser = newName;
+                    teamMembers.add(currentUser);
+                    updateTeamMembersList();
+                    saveParticipantsToStorage();
+                }
+            });
         });
 
         window.onload = function() {
@@ -757,6 +811,9 @@
             
             // Load from localStorage
             loadParticipantsFromStorage();
+            
+            // Initialize team members list
+            updateTeamMembersList();
             
             renderSessions();
             
