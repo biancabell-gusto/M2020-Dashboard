@@ -28,6 +28,8 @@
                 display: block; 
                 grid-template-columns: none; 
                 gap: 10px; 
+                margin: 0;
+                padding: 0;
             }
             .sidebar { 
                 position: fixed;
@@ -41,13 +43,17 @@
                 padding: 20px;
                 box-shadow: 2px 0 10px rgba(0,0,0,0.1);
                 overflow-y: auto;
+                visibility: hidden;
             }
             .sidebar.open {
                 left: 0;
+                visibility: visible;
             }
             .main { 
                 padding: 10px; 
                 width: 100%;
+                margin: 0;
+                max-width: 100%;
             }
             .mobile-overlay {
                 position: fixed;
