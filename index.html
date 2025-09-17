@@ -28,6 +28,8 @@
         .stats { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; }
         .stat-number { font-size: 24px; font-weight: bold; color: #F45D48; }
         .stat-label { font-size: 12px; color: #666; }
+        #search-input:focus { border-color: #F45D48; box-shadow: 0 0 0 3px rgba(244, 93, 72, 0.1); }
+        #search-input:hover { border-color: #ddd; }
     </style>
 </head>
 <body>
@@ -37,6 +39,16 @@
             Money 2020 Conference Dashboard
         </h1>
         <p>October 26-29, 2024 • Las Vegas, NV</p>
+        
+        <div style="margin-top: 20px;">
+            <div style="position: relative; max-width: 500px; margin: 0 auto;">
+                <input type="text" id="search-input" placeholder="🔍 Search sessions by title, type, location, or track..." 
+                       style="width: 100%; padding: 12px 40px 12px 12px; border: 2px solid #e9ecef; border-radius: 25px; font-size: 14px; outline: none; transition: border-color 0.3s;">
+                <button id="clear-search" onclick="clearSearch()" 
+                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #666; cursor: pointer; font-size: 16px; display: none;">✕</button>
+            </div>
+            <div id="search-results-info" style="text-align: center; margin-top: 10px; font-size: 12px; color: #666; display: none;"></div>
+        </div>
     </div>
     
     <div class="content">
@@ -352,6 +364,7 @@
         let syncInterval = null;
         let lastSyncTime = 0;
         let currentUser = '';
+        let currentSearchQuery = '';
 
         function renderSessions() {
             const container = document.getElementById('sessions-container');
@@ -365,7 +378,16 @@
                     participantMatch = session.participants && session.participants.includes(currentUser);
                 }
                 
-                return dayMatch && trackMatch && participantMatch;
+                let searchMatch = true;
+                if (currentSearchQuery.trim()) {
+                    const query = currentSearchQuery.toLowerCase();
+                    searchMatch = session.title.toLowerCase().includes(query) ||
+                                 session.type.toLowerCase().includes(query) ||
+                                 session.location.toLowerCase().includes(query) ||
+                                 session.track.toLowerCase().includes(query);
+                }
+                
+                return dayMatch && trackMatch && participantMatch && searchMatch;
             });
 
             let html = '';
@@ -398,6 +420,9 @@
 
             container.innerHTML = html;
             document.getElementById('filtered-count').textContent = filteredSessions.length;
+            
+            // Update search results info
+            updateSearchResultsInfo(filteredSessions.length);
         }
 
         function filterDay(day) {
@@ -531,6 +556,39 @@
             if (syncInterval) {
                 clearInterval(syncInterval);
                 syncInterval = null;
+            }
+        }
+
+        // Search functionality
+        function performSearch() {
+            const searchInput = document.getElementById('search-input');
+            currentSearchQuery = searchInput.value;
+            
+            // Show/hide clear button
+            const clearButton = document.getElementById('clear-search');
+            if (currentSearchQuery.trim()) {
+                clearButton.style.display = 'block';
+            } else {
+                clearButton.style.display = 'none';
+            }
+            
+            renderSessions();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            currentSearchQuery = '';
+            document.getElementById('clear-search').style.display = 'none';
+            renderSessions();
+        }
+
+        function updateSearchResultsInfo(resultCount) {
+            const searchInfo = document.getElementById('search-results-info');
+            if (currentSearchQuery.trim()) {
+                searchInfo.textContent = `Found ${resultCount} session${resultCount !== 1 ? 's' : ''} matching "${currentSearchQuery}"`;
+                searchInfo.style.display = 'block';
+            } else {
+                searchInfo.style.display = 'none';
             }
         }
 
@@ -791,6 +849,18 @@
                 if (newName && newName !== currentUser) {
                     currentUser = newName;
                     saveParticipantsToStorage();
+                }
+            });
+
+            // Search functionality
+            document.getElementById('search-input').addEventListener('input', function(e) {
+                performSearch();
+            });
+
+            // Search on Enter key
+            document.getElementById('search-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
                 }
             });
         });
