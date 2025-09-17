@@ -196,7 +196,7 @@
 
         <div class="main" id="sessions-container">
             <button id="mobile-toggle" onclick="toggleSidebar()" style="display: none; width: 100%; background: #F45D48; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; font-size: 16px;">
-                🔍 Filters & Search
+                ✕ Hide Filters
             </button>
             <!-- Sessions will load here -->
         </div>
@@ -688,10 +688,10 @@
             
             if (sidebar.style.display === 'none') {
                 sidebar.style.display = 'block';
-                toggle.textContent = '✕ Close Filters';
+                toggle.textContent = '✕ Hide Filters';
             } else {
                 sidebar.style.display = 'none';
-                toggle.textContent = '🔍 Filters & Search';
+                toggle.textContent = '🔍 Show Filters';
             }
         }
 
@@ -703,7 +703,8 @@
             
             if (isMobile) {
                 toggle.style.display = 'block';
-                sidebar.style.display = 'none';
+                // Show sidebar by default on mobile for better UX
+                sidebar.style.display = 'block';
             } else {
                 toggle.style.display = 'none';
                 sidebar.style.display = 'block';
