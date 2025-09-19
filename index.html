@@ -223,9 +223,6 @@
             </div>
             <div id="search-results-info" style="text-align: center; margin-bottom: 15px; font-size: 11px; color: #666; display: none;"></div>
             
-            <button onclick="debugState()" style="width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
-                🔍 Debug State
-            </button>
             
             <h3>Filter by Day</h3>
             <div id="day-filters">
@@ -655,16 +652,6 @@
 
         // All sync functions removed - partner meetings work independently
 
-        function debugState() {
-            console.log('=== DEBUG STATE ===');
-            console.log('Partner meetings count:', partnerMeetings.length);
-            console.log('Partner meetings:', partnerMeetings);
-            console.log('Sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
-            console.log('Current user:', currentUser);
-            console.log('Next meeting ID:', nextMeetingId);
-            
-            alert('Debug info logged to console. Check F12 console for details.');
-        }
 
         // Search functionality
         function performSearch() {
@@ -773,37 +760,27 @@
 
         // Simple localStorage functions for partner meetings only
         function savePartnerMeetings() {
-            console.log('Saving partner meetings:', partnerMeetings);
-            console.log('Saving nextMeetingId:', nextMeetingId);
             localStorage.setItem('partnerMeetings', JSON.stringify(partnerMeetings));
             localStorage.setItem('nextMeetingId', nextMeetingId.toString());
-            console.log('Partner meetings saved to localStorage');
         }
 
         function updateTotalCount() {
             const totalElement = document.getElementById('total-sessions');
             if (totalElement) {
                 totalElement.textContent = sessions.length;
-                console.log('Total sessions count updated to:', sessions.length);
             }
         }
 
         function loadPartnerMeetings() {
             const stored = localStorage.getItem('partnerMeetings');
-            console.log('Raw stored data:', stored);
             
             if (stored) {
                 partnerMeetings = JSON.parse(stored);
-                console.log('Loaded partner meetings:', partnerMeetings);
-                console.log('Partner meetings count:', partnerMeetings.length);
-            } else {
-                console.log('No partner meetings found in localStorage');
             }
             
             const storedId = localStorage.getItem('nextMeetingId');
             if (storedId) {
                 nextMeetingId = parseInt(storedId);
-                console.log('Loaded nextMeetingId:', nextMeetingId);
             }
         }
 
@@ -1087,14 +1064,8 @@
             // Load partner meetings from localStorage
             loadPartnerMeetings();
             
-            console.log('Before adding to sessions - partnerMeetings:', partnerMeetings);
-            console.log('Before adding to sessions - sessions count:', sessions.length);
-            
             // Add partner meetings to sessions array
             sessions.push(...partnerMeetings);
-            
-            console.log('After adding to sessions - sessions count:', sessions.length);
-            console.log('Sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
             
             // Sort sessions by day and time
             sessions.sort((a, b) => {
@@ -1109,8 +1080,6 @@
                 return a.time.localeCompare(b.time);
             });
             
-            console.log('After sorting - sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
-            
             // Update total count AFTER adding partner meetings
             updateTotalCount();
             
@@ -1118,8 +1087,6 @@
             checkMobile();
             
             renderSessions();
-            
-            console.log('=== WINDOW ONLOAD END ===');
         };
 
         // Handle window resize for mobile responsiveness
