@@ -223,6 +223,10 @@
             </div>
             <div id="search-results-info" style="text-align: center; margin-bottom: 15px; font-size: 11px; color: #666; display: none;"></div>
             
+            <button onclick="manualSync()" style="width: 100%; padding: 8px; background: #0A8080; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+                🔄 Manual Sync
+            </button>
+            
             <h3>Filter by Day</h3>
             <div id="day-filters">
                 <div class="filter-tag active" onclick="filterDay('All')">All</div>
@@ -668,6 +672,7 @@
                 user: currentUser || 'Anonymous'
             };
             
+            console.log('Saving sync data:', syncData);
             localStorage.setItem('conference_participants', JSON.stringify(syncData));
         }
 
@@ -682,8 +687,11 @@
                 
                 // Only load if data is recent (within 5 minutes)
                 if (now - syncData.timestamp > 5 * 60 * 1000) {
+                    console.log('Sync data too old, not loading');
                     return false;
                 }
+                
+                console.log('Loading sync data:', syncData);
                 
                 // Clear existing participants
                 sessions.forEach(session => {
@@ -701,13 +709,36 @@
                 }
                 
                 // Load partner meetings
-                if (syncData.partnerMeetings) {
+                if (syncData.partnerMeetings && syncData.partnerMeetings.length > 0) {
+                    console.log('Loading partner meetings:', syncData.partnerMeetings);
+                    
+                    // Remove existing partner meetings from sessions array
+                    sessions = sessions.filter(session => !session.isPartnerMeeting);
+                    
+                    // Add new partner meetings
                     partnerMeetings = [...syncData.partnerMeetings];
+                    sessions.push(...partnerMeetings);
+                    
                     // Update nextMeetingId to avoid conflicts
                     if (partnerMeetings.length > 0) {
                         const maxId = Math.max(...partnerMeetings.map(m => m.id));
                         nextMeetingId = Math.max(nextMeetingId, maxId + 1);
                     }
+                    
+                    // Sort sessions by day and time
+                    sessions.sort((a, b) => {
+                        const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                        const dayA = dayOrder.indexOf(a.day);
+                        const dayB = dayOrder.indexOf(b.day);
+                        
+                        if (dayA !== dayB) {
+                            return dayA - dayB;
+                        }
+                        
+                        return a.time.localeCompare(b.time);
+                    });
+                    
+                    console.log('Partner meetings loaded and sorted');
                 }
                 
                 return true;
@@ -735,6 +766,16 @@
             if (syncInterval) {
                 clearInterval(syncInterval);
                 syncInterval = null;
+            }
+        }
+
+        function manualSync() {
+            console.log('Manual sync triggered');
+            if (loadParticipantsFromStorage()) {
+                renderSessions();
+                alert('Sync completed! Check console for details.');
+            } else {
+                alert('No recent sync data found. Make sure your team member has added a partner meeting recently.');
             }
         }
 
