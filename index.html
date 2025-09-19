@@ -197,7 +197,7 @@
         </button>
         <h1 class="title">
             <span class="logo">G</span>
-            Money 2020 Conference Dashboard v4.2
+            Money 2020 Conference Dashboard v4.3
         </h1>
         <p>October 26-29, 2025 • Las Vegas, NV</p>
     </div>
@@ -881,6 +881,9 @@
                     
                     updateTotalCount();
                     renderSessions();
+                    
+                    // Debug: Log sync activity
+                    console.log('🔄 Sync updated: Partner meetings and session participation');
                 }
             }, 2000);
         }
@@ -1121,8 +1124,8 @@
                 // Re-render sessions
                 renderSessions();
                 
-                // Save to localStorage
-                savePartnerMeetings();
+                // Save to sync
+                saveToSync();
                 
                 alert('Partner meeting deleted successfully!');
             }
