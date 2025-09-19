@@ -780,6 +780,14 @@
             console.log('Partner meetings saved to localStorage');
         }
 
+        function updateTotalCount() {
+            const totalElement = document.getElementById('total-sessions');
+            if (totalElement) {
+                totalElement.textContent = sessions.length;
+                console.log('Total sessions count updated to:', sessions.length);
+            }
+        }
+
         function loadPartnerMeetings() {
             const stored = localStorage.getItem('partnerMeetings');
             console.log('Raw stored data:', stored);
@@ -920,7 +928,7 @@
             });
             
             // Update total count
-            document.getElementById('total-sessions').textContent = sessions.length;
+            updateTotalCount();
             
             // Re-render sessions
             renderSessions();
@@ -1021,7 +1029,7 @@
                 });
                 
                 // Update total count
-                document.getElementById('total-sessions').textContent = sessions.length;
+                updateTotalCount();
                 
                 // Re-render sessions
                 renderSessions();
@@ -1104,7 +1112,7 @@
             console.log('After sorting - sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
             
             // Update total count AFTER adding partner meetings
-            document.getElementById('total-sessions').textContent = sessions.length;
+            updateTotalCount();
             
             // Check mobile layout
             checkMobile();
