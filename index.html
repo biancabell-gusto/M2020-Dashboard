@@ -197,7 +197,7 @@
         </button>
         <h1 class="title">
             <span class="logo">G</span>
-            Money 2020 Conference Dashboard v4.0
+            Money 2020 Conference Dashboard v4.1
         </h1>
         <p>October 26-29, 2025 • Las Vegas, NV</p>
     </div>
@@ -771,7 +771,12 @@
                 user: currentUser || 'Anonymous'
             };
             
+            // Save to sync storage
             localStorage.setItem('conference_sync', JSON.stringify(syncData));
+            
+            // Also save to individual localStorage as backup
+            localStorage.setItem('partnerMeetings', JSON.stringify(partnerMeetings));
+            localStorage.setItem('nextMeetingId', nextMeetingId.toString());
         }
 
         function getSessionParticipants() {
@@ -800,9 +805,19 @@
                     return false;
                 }
                 
-                // Load partner meetings
+                // Merge partner meetings (don't overwrite local ones)
                 if (syncData.partnerMeetings) {
-                    partnerMeetings = [...syncData.partnerMeetings];
+                    syncData.partnerMeetings.forEach(syncMeeting => {
+                        const existingMeeting = partnerMeetings.find(m => m.id === syncMeeting.id);
+                        if (!existingMeeting) {
+                            // Add new meeting from sync
+                            partnerMeetings.push(syncMeeting);
+                        } else {
+                            // Update existing meeting with sync data
+                            Object.assign(existingMeeting, syncMeeting);
+                        }
+                    });
+                    
                     if (syncData.nextMeetingId) {
                         nextMeetingId = Math.max(nextMeetingId, syncData.nextMeetingId);
                     }
@@ -810,11 +825,6 @@
                 
                 // Load session participants
                 if (syncData.sessionParticipants) {
-                    // Clear existing participants
-                    sessions.forEach(session => {
-                        session.participants = [];
-                    });
-                    
                     // Load participant data
                     syncData.sessionParticipants.forEach(entry => {
                         const session = sessions.find(s => s.id === entry.sessionId);
@@ -1146,6 +1156,18 @@
         window.onload = function() {
             // Load initial data from sync
             loadFromSync();
+            
+            // Fallback: Load from localStorage if no sync data
+            if (partnerMeetings.length === 0) {
+                const stored = localStorage.getItem('partnerMeetings');
+                if (stored) {
+                    partnerMeetings = JSON.parse(stored);
+                }
+                const storedId = localStorage.getItem('nextMeetingId');
+                if (storedId) {
+                    nextMeetingId = parseInt(storedId);
+                }
+            }
             
             // Add partner meetings to sessions array
             sessions.push(...partnerMeetings);
