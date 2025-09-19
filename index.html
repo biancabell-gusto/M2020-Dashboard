@@ -232,8 +232,11 @@
             <button onclick="toggleSync()" id="sync-toggle-btn" style="width: 100%; padding: 8px; background: #666; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 10px;">
                 ⏸️ Disable Sync
             </button>
-            <button onclick="clearAllData()" style="width: 100%; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+            <button onclick="clearAllData()" style="width: 100%; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 10px;">
                 🗑️ Clear All Data
+            </button>
+            <button onclick="debugState()" style="width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+                🔍 Debug State
             </button>
             
             <h3>Filter by Day</h3>
@@ -939,6 +942,28 @@
             }
         }
 
+        function debugState() {
+            console.log('=== DEBUG STATE ===');
+            console.log('Sync disabled:', syncDisabled);
+            console.log('Partner meetings count:', partnerMeetings.length);
+            console.log('Partner meetings:', partnerMeetings);
+            console.log('Sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
+            console.log('Sync interval running:', !!syncInterval);
+            console.log('Current user:', currentUser);
+            console.log('Next meeting ID:', nextMeetingId);
+            
+            const stored = localStorage.getItem('conference_participants');
+            if (stored) {
+                const syncData = JSON.parse(stored);
+                console.log('Stored sync data:', syncData);
+                console.log('Stored partner meetings:', syncData.partnerMeetings);
+            } else {
+                console.log('No stored sync data');
+            }
+            
+            alert('Debug info logged to console. Check F12 console for details.');
+        }
+
         // Search functionality
         function performSearch() {
             const searchInput = document.getElementById('search-input');
@@ -1043,7 +1068,7 @@
         let partnerMeetings = [];
         let nextMeetingId = 1000; // Start partner meeting IDs from 1000
         let editingMeetingId = null; // Track which meeting is being edited
-        let syncDisabled = false; // Track if sync is disabled
+        let syncDisabled = true; // Start with sync disabled by default
 
         function showPartnerMeetingForm() {
             editingMeetingId = null; // Reset editing state
@@ -1333,8 +1358,13 @@
             
             renderSessions();
             
-            // Start real-time sync
-            startRealTimeSync();
+            // Start with sync disabled by default
+            console.log('Page loaded - sync is disabled by default');
+            document.getElementById('sync-toggle-btn').textContent = '▶️ Enable Sync';
+            document.getElementById('sync-toggle-btn').style.background = '#28a745';
+            
+            // Don't start real-time sync automatically
+            // startRealTimeSync();
         };
 
         // Handle window resize for mobile responsiveness
