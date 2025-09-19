@@ -226,8 +226,11 @@
             <button onclick="manualSync()" style="width: 100%; padding: 8px; background: #0A8080; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 10px;">
                 🔄 Manual Sync
             </button>
-            <button onclick="forceSync()" style="width: 100%; padding: 8px; background: #F45D48; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+            <button onclick="forceSync()" style="width: 100%; padding: 8px; background: #F45D48; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 10px;">
                 ⚡ Force Sync (Ignore Time)
+            </button>
+            <button onclick="toggleSync()" id="sync-toggle-btn" style="width: 100%; padding: 8px; background: #666; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+                ⏸️ Disable Sync
             </button>
             
             <h3>Filter by Day</h3>
@@ -711,15 +714,30 @@
                     });
                 }
                 
-                // Load partner meetings
+                // Load partner meetings - merge instead of replace
                 if (syncData.partnerMeetings && syncData.partnerMeetings.length > 0) {
                     console.log('Loading partner meetings:', syncData.partnerMeetings);
                     
                     // Remove existing partner meetings from sessions array
                     sessions = sessions.filter(session => !session.isPartnerMeeting);
                     
-                    // Add new partner meetings
-                    partnerMeetings = [...syncData.partnerMeetings];
+                    // Merge partner meetings (keep local ones that aren't in sync data)
+                    const existingIds = new Set(partnerMeetings.map(m => m.id));
+                    const newMeetings = syncData.partnerMeetings.filter(m => !existingIds.has(m.id));
+                    
+                    // Add new meetings from sync
+                    partnerMeetings.push(...newMeetings);
+                    
+                    // Update existing meetings with sync data
+                    syncData.partnerMeetings.forEach(syncMeeting => {
+                        const existingIndex = partnerMeetings.findIndex(m => m.id === syncMeeting.id);
+                        if (existingIndex >= 0) {
+                            // Update existing meeting with sync data
+                            partnerMeetings[existingIndex] = { ...partnerMeetings[existingIndex], ...syncMeeting };
+                        }
+                    });
+                    
+                    // Add all partner meetings to sessions
                     sessions.push(...partnerMeetings);
                     
                     // Update nextMeetingId to avoid conflicts
@@ -741,7 +759,7 @@
                         return a.time.localeCompare(b.time);
                     });
                     
-                    console.log('Partner meetings loaded and sorted');
+                    console.log('Partner meetings merged and sorted');
                 }
                 
                 return true;
@@ -755,7 +773,7 @@
         function startRealTimeSync() {
             // Check for updates every 1 second for better real-time experience
             syncInterval = setInterval(() => {
-                if (loadParticipantsFromStorage()) {
+                if (!syncDisabled && loadParticipantsFromStorage()) {
                     renderSessions();
                     // Also re-render partner meetings if they were updated
                     if (partnerMeetings.length > 0) {
@@ -809,15 +827,30 @@
                     });
                 }
                 
-                // Load partner meetings (force load regardless of time)
+                // Load partner meetings (force load regardless of time) - merge instead of replace
                 if (syncData.partnerMeetings && syncData.partnerMeetings.length > 0) {
                     console.log('Force loading partner meetings:', syncData.partnerMeetings);
                     
                     // Remove existing partner meetings from sessions array
                     sessions = sessions.filter(session => !session.isPartnerMeeting);
                     
-                    // Add new partner meetings
-                    partnerMeetings = [...syncData.partnerMeetings];
+                    // Merge partner meetings (keep local ones that aren't in sync data)
+                    const existingIds = new Set(partnerMeetings.map(m => m.id));
+                    const newMeetings = syncData.partnerMeetings.filter(m => !existingIds.has(m.id));
+                    
+                    // Add new meetings from sync
+                    partnerMeetings.push(...newMeetings);
+                    
+                    // Update existing meetings with sync data
+                    syncData.partnerMeetings.forEach(syncMeeting => {
+                        const existingIndex = partnerMeetings.findIndex(m => m.id === syncMeeting.id);
+                        if (existingIndex >= 0) {
+                            // Update existing meeting with sync data
+                            partnerMeetings[existingIndex] = { ...partnerMeetings[existingIndex], ...syncMeeting };
+                        }
+                    });
+                    
+                    // Add all partner meetings to sessions
                     sessions.push(...partnerMeetings);
                     
                     // Update nextMeetingId to avoid conflicts
@@ -839,7 +872,7 @@
                         return a.time.localeCompare(b.time);
                     });
                     
-                    console.log('Partner meetings force loaded and sorted');
+                    console.log('Partner meetings force merged and sorted');
                 }
                 
                 renderSessions();
@@ -848,6 +881,23 @@
             } catch (error) {
                 console.log('Error in force sync:', error);
                 alert('Error in force sync: ' + error.message);
+            }
+        }
+
+        function toggleSync() {
+            syncDisabled = !syncDisabled;
+            const btn = document.getElementById('sync-toggle-btn');
+            
+            if (syncDisabled) {
+                stopRealTimeSync();
+                btn.textContent = '▶️ Enable Sync';
+                btn.style.background = '#28a745';
+                alert('Sync disabled! Your changes won\'t be overwritten.');
+            } else {
+                startRealTimeSync();
+                btn.textContent = '⏸️ Disable Sync';
+                btn.style.background = '#666';
+                alert('Sync enabled! Changes will sync with team members.');
             }
         }
 
@@ -955,6 +1005,7 @@
         let partnerMeetings = [];
         let nextMeetingId = 1000; // Start partner meeting IDs from 1000
         let editingMeetingId = null; // Track which meeting is being edited
+        let syncDisabled = false; // Track if sync is disabled
 
         function showPartnerMeetingForm() {
             editingMeetingId = null; // Reset editing state
