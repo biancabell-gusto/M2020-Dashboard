@@ -771,6 +771,25 @@
         let nextMeetingId = 1000; // Start partner meeting IDs from 1000
         let editingMeetingId = null; // Track which meeting is being edited
 
+        // Simple localStorage functions for partner meetings only
+        function savePartnerMeetings() {
+            localStorage.setItem('partnerMeetings', JSON.stringify(partnerMeetings));
+            localStorage.setItem('nextMeetingId', nextMeetingId.toString());
+        }
+
+        function loadPartnerMeetings() {
+            const stored = localStorage.getItem('partnerMeetings');
+            if (stored) {
+                partnerMeetings = JSON.parse(stored);
+                console.log('Loaded partner meetings:', partnerMeetings);
+            }
+            
+            const storedId = localStorage.getItem('nextMeetingId');
+            if (storedId) {
+                nextMeetingId = parseInt(storedId);
+            }
+        }
+
         function showPartnerMeetingForm() {
             editingMeetingId = null; // Reset editing state
             document.getElementById('partner-meeting-modal').style.display = 'block';
@@ -897,6 +916,9 @@
             // Re-render sessions
             renderSessions();
             
+            // Save to localStorage
+            savePartnerMeetings();
+            
             // Hide form
             hidePartnerMeetingForm();
             
@@ -954,6 +976,9 @@
             // Re-render sessions
             renderSessions();
             
+            // Save to localStorage
+            savePartnerMeetings();
+            
             // Hide form
             hidePartnerMeetingForm();
             
@@ -991,6 +1016,9 @@
                 
                 // Re-render sessions
                 renderSessions();
+                
+                // Save to localStorage
+                savePartnerMeetings();
                 
                 alert('Partner meeting deleted successfully!');
             }
@@ -1041,12 +1069,31 @@
         window.onload = function() {
             document.getElementById('total-sessions').textContent = sessions.length;
             
+            // Load partner meetings from localStorage
+            loadPartnerMeetings();
+            
+            // Add partner meetings to sessions array
+            sessions.push(...partnerMeetings);
+            
+            // Sort sessions by day and time
+            sessions.sort((a, b) => {
+                const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                const dayA = dayOrder.indexOf(a.day);
+                const dayB = dayOrder.indexOf(b.day);
+                
+                if (dayA !== dayB) {
+                    return dayA - dayB;
+                }
+                
+                return a.time.localeCompare(b.time);
+            });
+            
             // Check mobile layout
             checkMobile();
             
             renderSessions();
             
-            console.log('Page loaded - partner meetings work independently');
+            console.log('Page loaded - partner meetings loaded from localStorage');
         };
 
         // Handle window resize for mobile responsiveness
