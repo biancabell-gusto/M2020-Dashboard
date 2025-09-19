@@ -223,8 +223,11 @@
             </div>
             <div id="search-results-info" style="text-align: center; margin-bottom: 15px; font-size: 11px; color: #666; display: none;"></div>
             
-            <button onclick="manualSync()" style="width: 100%; padding: 8px; background: #0A8080; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+            <button onclick="manualSync()" style="width: 100%; padding: 8px; background: #0A8080; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 10px;">
                 🔄 Manual Sync
+            </button>
+            <button onclick="forceSync()" style="width: 100%; padding: 8px; background: #F45D48; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; margin-bottom: 15px;">
+                ⚡ Force Sync (Ignore Time)
             </button>
             
             <h3>Filter by Day</h3>
@@ -685,9 +688,9 @@
                 const syncData = JSON.parse(stored);
                 const now = Date.now();
                 
-                // Only load if data is recent (within 5 minutes)
-                if (now - syncData.timestamp > 5 * 60 * 1000) {
-                    console.log('Sync data too old, not loading');
+                // Only load if data is recent (within 24 hours)
+                if (now - syncData.timestamp > 24 * 60 * 60 * 1000) {
+                    console.log('Sync data too old (older than 24 hours), not loading');
                     return false;
                 }
                 
@@ -776,6 +779,75 @@
                 alert('Sync completed! Check console for details.');
             } else {
                 alert('No recent sync data found. Make sure your team member has added a partner meeting recently.');
+            }
+        }
+
+        function forceSync() {
+            console.log('Force sync triggered - ignoring time limits');
+            try {
+                const stored = localStorage.getItem('conference_participants');
+                if (!stored) {
+                    alert('No sync data found in localStorage');
+                    return;
+                }
+                
+                const syncData = JSON.parse(stored);
+                console.log('Force loading sync data:', syncData);
+                
+                // Clear existing participants
+                sessions.forEach(session => {
+                    session.participants = [];
+                });
+                
+                // Load participant data
+                if (syncData.participants) {
+                    syncData.participants.forEach(entry => {
+                        const session = sessions.find(s => s.id === entry.sessionId);
+                        if (session) {
+                            session.participants = [...entry.participants];
+                        }
+                    });
+                }
+                
+                // Load partner meetings (force load regardless of time)
+                if (syncData.partnerMeetings && syncData.partnerMeetings.length > 0) {
+                    console.log('Force loading partner meetings:', syncData.partnerMeetings);
+                    
+                    // Remove existing partner meetings from sessions array
+                    sessions = sessions.filter(session => !session.isPartnerMeeting);
+                    
+                    // Add new partner meetings
+                    partnerMeetings = [...syncData.partnerMeetings];
+                    sessions.push(...partnerMeetings);
+                    
+                    // Update nextMeetingId to avoid conflicts
+                    if (partnerMeetings.length > 0) {
+                        const maxId = Math.max(...partnerMeetings.map(m => m.id));
+                        nextMeetingId = Math.max(nextMeetingId, maxId + 1);
+                    }
+                    
+                    // Sort sessions by day and time
+                    sessions.sort((a, b) => {
+                        const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                        const dayA = dayOrder.indexOf(a.day);
+                        const dayB = dayOrder.indexOf(b.day);
+                        
+                        if (dayA !== dayB) {
+                            return dayA - dayB;
+                        }
+                        
+                        return a.time.localeCompare(b.time);
+                    });
+                    
+                    console.log('Partner meetings force loaded and sorted');
+                }
+                
+                renderSessions();
+                alert('Force sync completed! Check console for details.');
+                
+            } catch (error) {
+                console.log('Error in force sync:', error);
+                alert('Error in force sync: ' + error.message);
             }
         }
 
