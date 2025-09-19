@@ -337,6 +337,9 @@
     </div>
 
     <script>
+        console.log('Script starting...');
+        alert('Script starting...');
+        
         // Complete Money 2020 Conference Agenda - All Sessions (Updated)
         const sessions = [
             // Sunday October 26 (31 sessions) - Updated with corrected agenda
@@ -1077,6 +1080,8 @@
 
         window.onload = function() {
             console.log('=== WINDOW ONLOAD START ===');
+            console.log('JavaScript is running!');
+            alert('JavaScript is running - check console for details');
             document.getElementById('total-sessions').textContent = sessions.length;
             
             // Load partner meetings from localStorage
