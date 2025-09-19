@@ -773,20 +773,29 @@
 
         // Simple localStorage functions for partner meetings only
         function savePartnerMeetings() {
+            console.log('Saving partner meetings:', partnerMeetings);
+            console.log('Saving nextMeetingId:', nextMeetingId);
             localStorage.setItem('partnerMeetings', JSON.stringify(partnerMeetings));
             localStorage.setItem('nextMeetingId', nextMeetingId.toString());
+            console.log('Partner meetings saved to localStorage');
         }
 
         function loadPartnerMeetings() {
             const stored = localStorage.getItem('partnerMeetings');
+            console.log('Raw stored data:', stored);
+            
             if (stored) {
                 partnerMeetings = JSON.parse(stored);
                 console.log('Loaded partner meetings:', partnerMeetings);
+                console.log('Partner meetings count:', partnerMeetings.length);
+            } else {
+                console.log('No partner meetings found in localStorage');
             }
             
             const storedId = localStorage.getItem('nextMeetingId');
             if (storedId) {
                 nextMeetingId = parseInt(storedId);
+                console.log('Loaded nextMeetingId:', nextMeetingId);
             }
         }
 
@@ -1067,13 +1076,20 @@
         });
 
         window.onload = function() {
+            console.log('=== WINDOW ONLOAD START ===');
             document.getElementById('total-sessions').textContent = sessions.length;
             
             // Load partner meetings from localStorage
             loadPartnerMeetings();
             
+            console.log('Before adding to sessions - partnerMeetings:', partnerMeetings);
+            console.log('Before adding to sessions - sessions count:', sessions.length);
+            
             // Add partner meetings to sessions array
             sessions.push(...partnerMeetings);
+            
+            console.log('After adding to sessions - sessions count:', sessions.length);
+            console.log('Sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
             
             // Sort sessions by day and time
             sessions.sort((a, b) => {
@@ -1088,12 +1104,14 @@
                 return a.time.localeCompare(b.time);
             });
             
+            console.log('After sorting - sessions with partner meetings:', sessions.filter(s => s.isPartnerMeeting));
+            
             // Check mobile layout
             checkMobile();
             
             renderSessions();
             
-            console.log('Page loaded - partner meetings loaded from localStorage');
+            console.log('=== WINDOW ONLOAD END ===');
         };
 
         // Handle window resize for mobile responsiveness
