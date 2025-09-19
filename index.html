@@ -197,7 +197,7 @@
         </button>
         <h1 class="title">
             <span class="logo">G</span>
-            Money 2020 Conference Dashboard v3.0
+            Money 2020 Conference Dashboard v4.0
         </h1>
         <p>October 26-29, 2025 • Las Vegas, NV</p>
     </div>
@@ -645,6 +645,9 @@
             }
 
             renderSessions();
+            
+            // Save to sync
+            saveToSync();
         }
 
         // Sync functions removed - partner meetings work independently
@@ -758,10 +761,101 @@
         let nextMeetingId = 1000; // Start partner meeting IDs from 1000
         let editingMeetingId = null; // Track which meeting is being edited
 
-        // Simple localStorage functions for partner meetings only
-        function savePartnerMeetings() {
-            localStorage.setItem('partnerMeetings', JSON.stringify(partnerMeetings));
-            localStorage.setItem('nextMeetingId', nextMeetingId.toString());
+        // Real-time sync functions
+        function saveToSync() {
+            const syncData = {
+                partnerMeetings: partnerMeetings,
+                nextMeetingId: nextMeetingId,
+                sessionParticipants: getSessionParticipants(),
+                timestamp: Date.now(),
+                user: currentUser || 'Anonymous'
+            };
+            
+            localStorage.setItem('conference_sync', JSON.stringify(syncData));
+        }
+
+        function getSessionParticipants() {
+            const participants = [];
+            sessions.forEach(session => {
+                if (session.participants && session.participants.length > 0) {
+                    participants.push({
+                        sessionId: session.id,
+                        participants: session.participants
+                    });
+                }
+            });
+            return participants;
+        }
+
+        function loadFromSync() {
+            try {
+                const stored = localStorage.getItem('conference_sync');
+                if (!stored) return false;
+                
+                const syncData = JSON.parse(stored);
+                const now = Date.now();
+                
+                // Only load if data is recent (within 1 hour)
+                if (now - syncData.timestamp > 60 * 60 * 1000) {
+                    return false;
+                }
+                
+                // Load partner meetings
+                if (syncData.partnerMeetings) {
+                    partnerMeetings = [...syncData.partnerMeetings];
+                    if (syncData.nextMeetingId) {
+                        nextMeetingId = Math.max(nextMeetingId, syncData.nextMeetingId);
+                    }
+                }
+                
+                // Load session participants
+                if (syncData.sessionParticipants) {
+                    // Clear existing participants
+                    sessions.forEach(session => {
+                        session.participants = [];
+                    });
+                    
+                    // Load participant data
+                    syncData.sessionParticipants.forEach(entry => {
+                        const session = sessions.find(s => s.id === entry.sessionId);
+                        if (session) {
+                            session.participants = [...entry.participants];
+                        }
+                    });
+                }
+                
+                return true;
+            } catch (error) {
+                console.log('Error loading sync data:', error);
+                return false;
+            }
+        }
+
+        function startSync() {
+            // Check for updates every 2 seconds
+            setInterval(() => {
+                if (loadFromSync()) {
+                    // Update sessions array with partner meetings
+                    sessions = sessions.filter(session => !session.isPartnerMeeting);
+                    sessions.push(...partnerMeetings);
+                    
+                    // Sort sessions
+                    sessions.sort((a, b) => {
+                        const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                        const dayA = dayOrder.indexOf(a.day);
+                        const dayB = dayOrder.indexOf(b.day);
+                        
+                        if (dayA !== dayB) {
+                            return dayA - dayB;
+                        }
+                        
+                        return a.time.localeCompare(b.time);
+                    });
+                    
+                    updateTotalCount();
+                    renderSessions();
+                }
+            }, 2000);
         }
 
         function updateTotalCount() {
@@ -771,18 +865,7 @@
             }
         }
 
-        function loadPartnerMeetings() {
-            const stored = localStorage.getItem('partnerMeetings');
-            
-            if (stored) {
-                partnerMeetings = JSON.parse(stored);
-            }
-            
-            const storedId = localStorage.getItem('nextMeetingId');
-            if (storedId) {
-                nextMeetingId = parseInt(storedId);
-            }
-        }
+        // Legacy function removed - now using loadFromSync()
 
         function showPartnerMeetingForm() {
             editingMeetingId = null; // Reset editing state
@@ -910,8 +993,8 @@
             // Re-render sessions
             renderSessions();
             
-            // Save to localStorage
-            savePartnerMeetings();
+            // Save to sync
+            saveToSync();
             
             // Hide form
             hidePartnerMeetingForm();
@@ -970,8 +1053,8 @@
             // Re-render sessions
             renderSessions();
             
-            // Save to localStorage
-            savePartnerMeetings();
+            // Save to sync
+            saveToSync();
             
             // Hide form
             hidePartnerMeetingForm();
@@ -1061,8 +1144,8 @@
         });
 
         window.onload = function() {
-            // Load partner meetings from localStorage
-            loadPartnerMeetings();
+            // Load initial data from sync
+            loadFromSync();
             
             // Add partner meetings to sessions array
             sessions.push(...partnerMeetings);
@@ -1087,6 +1170,9 @@
             checkMobile();
             
             renderSessions();
+            
+            // Start real-time sync
+            startSync();
         };
 
         // Handle window resize for mobile responsiveness
@@ -1096,3 +1182,4 @@
     </script>
 </body>
 </html>
+
