@@ -663,6 +663,7 @@
             
             const syncData = {
                 participants: participantData,
+                partnerMeetings: partnerMeetings,
                 timestamp: Date.now(),
                 user: currentUser || 'Anonymous'
             };
@@ -690,13 +691,24 @@
                 });
                 
                 // Load participant data
-                syncData.participants.forEach(entry => {
-                    const session = sessions.find(s => s.id === entry.sessionId);
-                    if (session) {
-                        session.participants = [...entry.participants];
-                    }
-                });
+                if (syncData.participants) {
+                    syncData.participants.forEach(entry => {
+                        const session = sessions.find(s => s.id === entry.sessionId);
+                        if (session) {
+                            session.participants = [...entry.participants];
+                        }
+                    });
+                }
                 
+                // Load partner meetings
+                if (syncData.partnerMeetings) {
+                    partnerMeetings = [...syncData.partnerMeetings];
+                    // Update nextMeetingId to avoid conflicts
+                    if (partnerMeetings.length > 0) {
+                        const maxId = Math.max(...partnerMeetings.map(m => m.id));
+                        nextMeetingId = Math.max(nextMeetingId, maxId + 1);
+                    }
+                }
                 
                 return true;
             } catch (error) {
@@ -711,6 +723,10 @@
             syncInterval = setInterval(() => {
                 if (loadParticipantsFromStorage()) {
                     renderSessions();
+                    // Also re-render partner meetings if they were updated
+                    if (partnerMeetings.length > 0) {
+                        // Partner meetings are already included in sessions array, so renderSessions() handles them
+                    }
                 }
             }, 1000);
         }
@@ -953,6 +969,9 @@
             // Re-render sessions
             renderSessions();
             
+            // Save to localStorage for real-time sync
+            saveParticipantsToStorage();
+            
             // Hide form
             hidePartnerMeetingForm();
             
@@ -1010,6 +1029,9 @@
             // Re-render sessions
             renderSessions();
             
+            // Save to localStorage for real-time sync
+            saveParticipantsToStorage();
+            
             // Hide form
             hidePartnerMeetingForm();
             
@@ -1047,6 +1069,9 @@
                 
                 // Re-render sessions
                 renderSessions();
+                
+                // Save to localStorage for real-time sync
+                saveParticipantsToStorage();
                 
                 alert('Partner meeting deleted successfully!');
             }
