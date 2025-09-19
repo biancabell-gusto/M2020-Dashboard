@@ -197,7 +197,7 @@
         </button>
         <h1 class="title">
             <span class="logo">G</span>
-            Money 2020 Conference Dashboard v4.1
+            Money 2020 Conference Dashboard v4.2
         </h1>
         <p>October 26-29, 2025 • Las Vegas, NV</p>
     </div>
@@ -779,6 +779,23 @@
             localStorage.setItem('nextMeetingId', nextMeetingId.toString());
         }
 
+        function saveUserName() {
+            if (currentUser) {
+                localStorage.setItem('userName', currentUser);
+            }
+        }
+
+        function loadUserName() {
+            const stored = localStorage.getItem('userName');
+            if (stored) {
+                currentUser = stored;
+                const nameInput = document.getElementById('participant-name');
+                if (nameInput) {
+                    nameInput.value = stored;
+                }
+            }
+        }
+
         function getSessionParticipants() {
             const participants = [];
             sessions.forEach(session => {
@@ -1137,6 +1154,7 @@
                 const newName = e.target.value.trim();
                 if (newName && newName !== currentUser) {
                     currentUser = newName;
+                    saveUserName(); // Save name when it changes
                 }
             });
 
@@ -1154,6 +1172,9 @@
         });
 
         window.onload = function() {
+            // Load user name first
+            loadUserName();
+            
             // Load initial data from sync
             loadFromSync();
             
