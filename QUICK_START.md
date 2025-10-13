@@ -24,3 +24,4 @@
 - **Touch-friendly** - All buttons work perfectly on mobile
 
 **Ready to go! 🚀**
+

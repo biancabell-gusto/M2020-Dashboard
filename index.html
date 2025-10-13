@@ -7,8 +7,13 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="version" content="2.3-2024-12-19-15:30">
+    <meta name="version" content="3.0-2024-12-19-16:00">
     <script>console.log('Dashboard loaded at:', new Date().toISOString());</script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f5f5f5; }
         .header { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
@@ -257,9 +262,9 @@
             </div>
             
             <div style="margin-bottom: 20px;">
-                <div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #28a745;">
-                    <strong style="color: #28a745;">🔄 Real-time Sync Active</strong><br>
-                    <small style="color: #666;">Changes sync automatically with your team</small>
+                <div id="sync-status" style="background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 10px; border-left: 4px solid #ffc107;">
+                    <strong style="color: #856404;">⏳ Connecting to Firebase...</strong><br>
+                    <small style="color: #666;">Setting up real-time sync</small>
                 </div>
             </div>
             
@@ -334,6 +339,23 @@
     </div>
 
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm8F9vXZ_1hJKqY9xN5pE2rW6tA3sC4dU",
+            authDomain: "m2020-dashboard.firebaseapp.com",
+            databaseURL: "https://m2020-dashboard-default-rtdb.firebaseio.com/",
+            projectId: "m2020-dashboard",
+            storageBucket: "m2020-dashboard.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef123456"
+        };
+        
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+        
         // Complete Money 2020 Conference Agenda - All Sessions (Updated)
         const sessions = [
             // Sunday October 26 (31 sessions) - Updated with corrected agenda
@@ -761,7 +783,7 @@
         let nextMeetingId = 1000; // Start partner meeting IDs from 1000
         let editingMeetingId = null; // Track which meeting is being edited
 
-        // Real-time sync functions
+        // Real-time sync functions using Firebase
         function saveToSync() {
             const syncData = {
                 partnerMeetings: partnerMeetings,
@@ -771,12 +793,16 @@
                 user: currentUser || 'Anonymous'
             };
             
-            // Save to sync storage
-            localStorage.setItem('conference_sync', JSON.stringify(syncData));
-            
-            // Also save to individual localStorage as backup
-            localStorage.setItem('partnerMeetings', JSON.stringify(partnerMeetings));
-            localStorage.setItem('nextMeetingId', nextMeetingId.toString());
+            // Save to Firebase
+            database.ref('conference_data').set(syncData)
+                .then(() => {
+                    console.log('✅ Data synced to Firebase');
+                })
+                .catch((error) => {
+                    console.error('❌ Firebase sync error:', error);
+                    // Fallback to localStorage
+                    localStorage.setItem('conference_sync', JSON.stringify(syncData));
+                });
         }
 
         function saveUserName() {
@@ -810,82 +836,151 @@
         }
 
         function loadFromSync() {
-            try {
-                const stored = localStorage.getItem('conference_sync');
-                if (!stored) return false;
-                
-                const syncData = JSON.parse(stored);
-                const now = Date.now();
-                
-                // Only load if data is recent (within 1 hour)
-                if (now - syncData.timestamp > 60 * 60 * 1000) {
-                    return false;
-                }
-                
-                // Merge partner meetings (don't overwrite local ones)
-                if (syncData.partnerMeetings) {
-                    syncData.partnerMeetings.forEach(syncMeeting => {
-                        const existingMeeting = partnerMeetings.find(m => m.id === syncMeeting.id);
-                        if (!existingMeeting) {
-                            // Add new meeting from sync
-                            partnerMeetings.push(syncMeeting);
+            return new Promise((resolve, reject) => {
+                // Load from Firebase
+                database.ref('conference_data').once('value')
+                    .then((snapshot) => {
+                        const syncData = snapshot.val();
+                        if (!syncData) {
+                            console.log('No data in Firebase, checking localStorage...');
+                            // Fallback to localStorage
+                            const stored = localStorage.getItem('conference_sync');
+                            if (stored) {
+                                const localData = JSON.parse(stored);
+                                applySyncData(localData);
+                                resolve(true);
+                            } else {
+                                resolve(false);
+                            }
+                            return;
+                        }
+                        
+                        applySyncData(syncData);
+                        resolve(true);
+                    })
+                    .catch((error) => {
+                        console.error('❌ Firebase load error:', error);
+                        // Fallback to localStorage
+                        const stored = localStorage.getItem('conference_sync');
+                        if (stored) {
+                            const localData = JSON.parse(stored);
+                            applySyncData(localData);
+                            resolve(true);
                         } else {
-                            // Update existing meeting with sync data
-                            Object.assign(existingMeeting, syncMeeting);
+                            resolve(false);
                         }
                     });
-                    
-                    if (syncData.nextMeetingId) {
-                        nextMeetingId = Math.max(nextMeetingId, syncData.nextMeetingId);
-                    }
-                }
+            });
+        }
+        
+        function applySyncData(syncData) {
+            // Merge partner meetings
+            if (syncData.partnerMeetings) {
+                // Clear existing partner meetings from sessions
+                sessions = sessions.filter(s => !s.isPartnerMeeting);
                 
-                // Load session participants
-                if (syncData.sessionParticipants) {
-                    // Load participant data
-                    syncData.sessionParticipants.forEach(entry => {
-                        const session = sessions.find(s => s.id === entry.sessionId);
-                        if (session) {
-                            session.participants = [...entry.participants];
-                        }
-                    });
-                }
+                // Update partnerMeetings array
+                partnerMeetings = syncData.partnerMeetings || [];
                 
-                return true;
-            } catch (error) {
-                console.log('Error loading sync data:', error);
-                return false;
+                // Add all partner meetings to sessions
+                sessions.push(...partnerMeetings);
+                
+                if (syncData.nextMeetingId) {
+                    nextMeetingId = Math.max(nextMeetingId, syncData.nextMeetingId);
+                }
             }
+            
+            // Load session participants
+            if (syncData.sessionParticipants) {
+                syncData.sessionParticipants.forEach(entry => {
+                    const session = sessions.find(s => s.id === entry.sessionId);
+                    if (session) {
+                        session.participants = [...entry.participants];
+                    }
+                });
+            }
+            
+            // Sort sessions
+            sessions.sort((a, b) => {
+                const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
+                const dayA = dayOrder.indexOf(a.day);
+                const dayB = dayOrder.indexOf(b.day);
+                
+                if (dayA !== dayB) {
+                    return dayA - dayB;
+                }
+                
+                return a.time.localeCompare(b.time);
+            });
         }
 
-        function startSync() {
-            // Check for updates every 2 seconds
-            setInterval(() => {
-                if (loadFromSync()) {
-                    // Update sessions array with partner meetings
-                    sessions = sessions.filter(session => !session.isPartnerMeeting);
-                    sessions.push(...partnerMeetings);
-                    
-                    // Sort sessions
-                    sessions.sort((a, b) => {
-                        const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
-                        const dayA = dayOrder.indexOf(a.day);
-                        const dayB = dayOrder.indexOf(b.day);
-                        
-                        if (dayA !== dayB) {
-                            return dayA - dayB;
-                        }
-                        
-                        return a.time.localeCompare(b.time);
-                    });
-                    
-                    updateTotalCount();
-                    renderSessions();
-                    
-                    // Debug: Log sync activity
-                    console.log('🔄 Sync updated: Partner meetings and session participation');
+        function updateSyncStatus(status, message, detail) {
+            const syncStatusEl = document.getElementById('sync-status');
+            if (!syncStatusEl) return;
+            
+            const statusConfig = {
+                connected: {
+                    bg: '#e8f5e8',
+                    border: '#28a745',
+                    color: '#28a745',
+                    icon: '✅'
+                },
+                connecting: {
+                    bg: '#fff3cd',
+                    border: '#ffc107',
+                    color: '#856404',
+                    icon: '⏳'
+                },
+                error: {
+                    bg: '#f8d7da',
+                    border: '#dc3545',
+                    color: '#721c24',
+                    icon: '❌'
                 }
-            }, 2000);
+            };
+            
+            const config = statusConfig[status];
+            syncStatusEl.style.background = config.bg;
+            syncStatusEl.style.borderLeftColor = config.border;
+            syncStatusEl.innerHTML = `
+                <strong style="color: ${config.color};">${config.icon} ${message}</strong><br>
+                <small style="color: #666;">${detail}</small>
+            `;
+        }
+        
+        function startSync() {
+            // Set up Firebase real-time listener
+            database.ref('conference_data').on('value', (snapshot) => {
+                const syncData = snapshot.val();
+                
+                // Update status to connected
+                updateSyncStatus('connected', 'Real-time Sync Active', 'All users see the same data instantly');
+                
+                if (!syncData) {
+                    console.log('No sync data available - fresh start');
+                    return;
+                }
+                
+                console.log('🔄 Real-time update received from Firebase');
+                
+                // Apply the synced data
+                applySyncData(syncData);
+                
+                // Update UI
+                updateTotalCount();
+                renderSessions();
+            }, (error) => {
+                console.error('❌ Firebase listener error:', error);
+                updateSyncStatus('error', 'Sync Error', 'Using local storage only');
+                
+                // Fallback to polling if Firebase fails
+                setInterval(() => {
+                    loadFromSync().then(() => {
+                        updateTotalCount();
+                        renderSessions();
+                    });
+                }, 5000);
+            });
         }
 
         function updateTotalCount() {
@@ -1175,50 +1270,36 @@
         });
 
         window.onload = function() {
+            console.log('🚀 Dashboard initializing with Firebase sync...');
+            
             // Load user name first
             loadUserName();
-            
-            // Load initial data from sync
-            loadFromSync();
-            
-            // Fallback: Load from localStorage if no sync data
-            if (partnerMeetings.length === 0) {
-                const stored = localStorage.getItem('partnerMeetings');
-                if (stored) {
-                    partnerMeetings = JSON.parse(stored);
-                }
-                const storedId = localStorage.getItem('nextMeetingId');
-                if (storedId) {
-                    nextMeetingId = parseInt(storedId);
-                }
-            }
-            
-            // Add partner meetings to sessions array
-            sessions.push(...partnerMeetings);
-            
-            // Sort sessions by day and time
-            sessions.sort((a, b) => {
-                const dayOrder = ['Sunday Oct 26', 'Monday Oct 27', 'Tuesday Oct 28', 'Wednesday Oct 29'];
-                const dayA = dayOrder.indexOf(a.day);
-                const dayB = dayOrder.indexOf(b.day);
-                
-                if (dayA !== dayB) {
-                    return dayA - dayB;
-                }
-                
-                return a.time.localeCompare(b.time);
-            });
-            
-            // Update total count AFTER adding partner meetings
-            updateTotalCount();
             
             // Check mobile layout
             checkMobile();
             
-            renderSessions();
-            
-            // Start real-time sync
-            startSync();
+            // Load initial data from Firebase
+            loadFromSync().then((hasData) => {
+                console.log(hasData ? '✅ Initial data loaded' : '⚠️ No data found, starting fresh');
+                
+                // Update total count
+                updateTotalCount();
+                
+                // Render sessions
+                renderSessions();
+                
+                // Start real-time sync listener
+                startSync();
+                
+                console.log('✅ Dashboard ready with real-time sync active');
+            }).catch((error) => {
+                console.error('❌ Error loading initial data:', error);
+                
+                // Still render and start sync even if initial load fails
+                updateTotalCount();
+                renderSessions();
+                startSync();
+            });
         };
 
         // Handle window resize for mobile responsiveness
