@@ -241,12 +241,8 @@
             <h3>Filter by Topic</h3>
             <div id="track-filters">
                 <div class="filter-tag active" onclick="filterTrack('All')">All</div>
-                <div class="filter-tag" onclick="filterTrack('Securing Trust')">Securing Trust</div>
-                <div class="filter-tag" onclick="filterTrack('Age of Infrastructure')">Age of Infrastructure</div>
-                <div class="filter-tag" onclick="filterTrack('Global Payments Race')">Global Payments Race</div>
-                <div class="filter-tag" onclick="filterTrack('FinTech Spring')">FinTech Spring</div>
-                <div class="filter-tag" onclick="filterTrack('Networking')">Networking</div>
                 <div class="filter-tag" onclick="filterTrack('Partner Meeting')">Partner Meeting</div>
+                <div class="filter-tag" onclick="filterTrack('Conference Agenda')">Conference Agenda</div>
             </div>
             
             <h3>Filter by Participant</h3>
@@ -610,7 +606,16 @@
             
             const filteredSessions = sessions.filter(session => {
                 const dayMatch = currentDayFilter === 'All' || session.day === currentDayFilter;
-                const trackMatch = currentTrackFilter === 'All' || session.track === currentTrackFilter;
+                
+                // Handle Conference Agenda filter (all non-Partner Meeting sessions)
+                let trackMatch;
+                if (currentTrackFilter === 'All') {
+                    trackMatch = true;
+                } else if (currentTrackFilter === 'Conference Agenda') {
+                    trackMatch = session.track !== 'Partner Meeting';
+                } else {
+                    trackMatch = session.track === currentTrackFilter;
+                }
                 
                 let participantMatch = true;
                 if (currentParticipantFilter === 'Me') {
