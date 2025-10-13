@@ -343,7 +343,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyBm8F9vXZ_1hJKqY9xN5pE2rW6tA3sC4dU",
             authDomain: "m2020-dashboard.firebaseapp.com",
-            databaseURL: "https://m2020-dashboard-default-rtdb.firebaseio.com/",
+            databaseURL: "https://m2020-dashboard-default-rtdb.firebaseio.com",
             projectId: "m2020-dashboard",
             storageBucket: "m2020-dashboard.appspot.com",
             messagingSenderId: "123456789012",
@@ -793,10 +793,16 @@
                 user: currentUser || 'Anonymous'
             };
             
+            console.log('📤 Saving to Firebase...', {
+                partnerMeetings: syncData.partnerMeetings.length,
+                sessionParticipants: syncData.sessionParticipants.length,
+                user: syncData.user
+            });
+            
             // Save to Firebase
             database.ref('conference_data').set(syncData)
                 .then(() => {
-                    console.log('✅ Data synced to Firebase');
+                    console.log('✅ Data synced to Firebase successfully!');
                 })
                 .catch((error) => {
                     console.error('❌ Firebase sync error:', error);
@@ -874,9 +880,15 @@
         }
         
         function applySyncData(syncData) {
+            console.log('🔄 Applying sync data...', {
+                partnerMeetings: syncData.partnerMeetings?.length || 0,
+                sessionParticipants: syncData.sessionParticipants?.length || 0
+            });
+            
             // Merge partner meetings
             if (syncData.partnerMeetings) {
                 // Clear existing partner meetings from sessions
+                const beforeCount = sessions.filter(s => s.isPartnerMeeting).length;
                 sessions = sessions.filter(s => !s.isPartnerMeeting);
                 
                 // Update partnerMeetings array
@@ -884,6 +896,8 @@
                 
                 // Add all partner meetings to sessions
                 sessions.push(...partnerMeetings);
+                
+                console.log(`   Replaced ${beforeCount} partner meetings with ${partnerMeetings.length}`);
                 
                 if (syncData.nextMeetingId) {
                     nextMeetingId = Math.max(nextMeetingId, syncData.nextMeetingId);
@@ -912,6 +926,8 @@
                 
                 return a.time.localeCompare(b.time);
             });
+            
+            console.log('✅ Sync data applied. Total sessions:', sessions.length);
         }
 
         function updateSyncStatus(status, message, detail) {
@@ -948,6 +964,8 @@
             `;
         }
         
+        let isFirstSync = true;
+        
         function startSync() {
             // Set up Firebase real-time listener
             database.ref('conference_data').on('value', (snapshot) => {
@@ -957,11 +975,17 @@
                 updateSyncStatus('connected', 'Real-time Sync Active', 'All users see the same data instantly');
                 
                 if (!syncData) {
-                    console.log('No sync data available - fresh start');
+                    console.log('⚠️ No sync data available - fresh start');
                     return;
                 }
                 
-                console.log('🔄 Real-time update received from Firebase');
+                if (isFirstSync) {
+                    console.log('📥 Initial Firebase data loaded');
+                    isFirstSync = false;
+                } else {
+                    console.log('🔔 Real-time update received from Firebase!');
+                    console.log('Partner meetings in Firebase:', syncData.partnerMeetings?.length || 0);
+                }
                 
                 // Apply the synced data
                 applySyncData(syncData);
